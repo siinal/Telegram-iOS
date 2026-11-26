@@ -189,6 +189,7 @@ func chatHistoryEntriesForView(
         if sgIsMessageFiltered(message, accountPeerId: context.account.peerId) {
             continue
         }
+        message = sgMessageWithZalgoFilter(message)
         
         if case let .replyThread(replyThreadMessage) = location, replyThreadMessage.isForumPost {
             if isUndisplayedForumTopicRoot(message, location: location, additionalData: view.additionalData) {

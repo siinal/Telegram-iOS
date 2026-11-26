@@ -141,6 +141,7 @@ private enum SGBoolSetting: String {
     case semiTransparentDeletedMessages
     case disableOpenLinkWarning
     case hideSimilarChannels
+    case filterZalgo
 }
 
 private enum SGOneFromManySetting: String {
@@ -269,6 +270,7 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.disclosure(id: id.count, section: .filters, link: .filterPatterns, text: ghostText("Шаблоны (\(SGSimpleSettings.shared.filterPatterns.count))", "Patterns (\(SGSimpleSettings.shared.filterPatterns.count))")))
     entries.append(.toggle(id: id.count, section: .filters, settingName: .filterHideBlocked, value: SGSimpleSettings.shared.filterHideBlocked, text: ghostText("Скрывать заблокированных в группах", "Hide Blocked Users in Groups"), enabled: filterOn))
     entries.append(.toggle(id: id.count, section: .filters, settingName: .filterInPrivateChats, value: SGSimpleSettings.shared.filterInPrivateChats, text: ghostText("Применять в личных чатах", "Apply in Private Chats"), enabled: filterOn))
+    entries.append(.toggle(id: id.count, section: .filters, settingName: .filterZalgo, value: SGSimpleSettings.shared.filterZalgo, text: ghostText("Убирать «залго» из сообщений", "Remove Zalgo Text"), enabled: true))
     entries.append(.toggle(id: id.count, section: .filters, settingName: .hideMemberServiceMessages, value: SGSimpleSettings.shared.hideMemberServiceMessages, text: ghostText("Скрывать «вошёл / вышел» в группах", "Hide Join and Leave Messages"), enabled: true))
     let shadowBanCount = SGSimpleSettings.shared.shadowBannedPeerIds.count
     let hiddenMessagesCount = SGSimpleSettings.shared.hiddenMessageIds.count
@@ -601,6 +603,8 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
             SGSimpleSettings.shared.disableOpenLinkWarning = value
         case .hideSimilarChannels:
             SGSimpleSettings.shared.hideSimilarChannels = value
+        case .filterZalgo:
+            SGSimpleSettings.shared.filterZalgo = value
         case .showProfileId:
             SGSimpleSettings.shared.showProfileId = value
         case .warnOnStoriesOpen:

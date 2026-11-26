@@ -269,3 +269,48 @@ public func sgAddFilterPattern(fromText text: String) -> String? {
     SGSimpleSettings.shared.filterEnabled = true
     return pattern
 }
+
+// MARK: Swiftgram zalgo filter
+
+private func sgIsCombiningMark(_ scalar: Unicode.Scalar) -> Bool {
+    switch scalar.value {
+    case 0x0300 ... 0x036F, 0x0483 ... 0x0489, 0x1AB0 ... 0x1AFF, 0x1DC0 ... 0x1DFF, 0x20D0 ... 0x20FF, 0xFE20 ... 0xFE2F:
+        return true
+    default:
+        return false
+    }
+}
+
+/// The text without stacks of three or more combining marks, or nil when it has none.
+public func sgStripZalgo(_ text: String) -> String? {
+    var result = String.UnicodeScalarView()
+    var pending: [Unicode.Scalar] = []
+    var changed = false
+    func flush() {
+        if pending.count >= 3 {
+            changed = true
+        } else {
+            result.append(contentsOf: pending)
+        }
+        pending.removeAll()
+    }
+    for scalar in text.unicodeScalars {
+        if sgIsCombiningMark(scalar) {
+            pending.append(scalar)
+        } else {
+            flush()
+            result.append(scalar)
+        }
+    }
+    flush()
+    return changed ? String(result) : nil
+}
+
+/// Applies the zalgo filter to a message for display. Entities are dropped when the text changes, since their
+/// ranges no longer match.
+public func sgMessageWithZalgoFilter(_ message: Message) -> Message {
+    guard SGSimpleSettings.shared.filterZalgo, !message.text.isEmpty, let stripped = sgStripZalgo(message.text) else {
+        return message
+    }
+    return message.withUpdatedText(stripped).withUpdatedAttributes(message.attributes.filter { !($0 is TextEntitiesMessageAttribute) })
+}
