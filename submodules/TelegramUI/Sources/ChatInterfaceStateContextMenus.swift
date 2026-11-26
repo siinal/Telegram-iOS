@@ -1631,8 +1631,9 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
         }
         if sgIsAIServiceConfigured && !message.text.isEmpty {
-            sgActions.append(sgMakeContextMenuAction(.askAI(controllerInteraction: controllerInteraction, context: context, translate: false), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
-            sgActions.append(sgMakeContextMenuAction(.askAI(controllerInteraction: controllerInteraction, context: context, translate: true), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+            sgActions.append(sgMakeContextMenuAction(.askAI(controllerInteraction: controllerInteraction, context: context, mode: 0), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+            sgActions.append(sgMakeContextMenuAction(.askAI(controllerInteraction: controllerInteraction, context: context, mode: 1), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+            sgActions.append(sgMakeContextMenuAction(.askAI(controllerInteraction: controllerInteraction, context: context, mode: 2), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
         }
         //
         

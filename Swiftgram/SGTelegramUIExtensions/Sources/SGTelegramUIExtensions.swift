@@ -102,7 +102,7 @@ enum SGContextMenuActionFactory {
     case hideForwardName(interfaceInteraction: ChatPanelInterfaceInteraction, selectAll: Bool, isImage: Bool, messages: [EngineRawMessage])
     case editHistory(controllerInteraction: ChatControllerInteraction, context: AccountContext)
     case lyrics(controllerInteraction: ChatControllerInteraction, context: AccountContext, title: String, performer: String?)
-    case askAI(controllerInteraction: ChatControllerInteraction, context: AccountContext, translate: Bool)
+    case askAI(controllerInteraction: ChatControllerInteraction, context: AccountContext, mode: Int)
     case ghostMarkRead(context: AccountContext)
     case messageShot(context: AccountContext, view: () -> UIView?)
     case deletedList(controllerInteraction: ChatControllerInteraction, context: AccountContext)
@@ -209,12 +209,15 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
                 model.finish(text: lyrics ?? (isRu ? "Текст не найден на lrclib.net." : "No lyrics found on lrclib.net."))
             })
         }))
-    case let .askAI(controllerInteraction, context, translate):
+    case let .askAI(controllerInteraction, context, mode):
         let lang = chatPresentationInterfaceState.strings.baseLanguageCode
         let isRu = lang == "ru" || lang == "uk" || lang == "be"
         let title: String
         let instruction: String
-        if translate {
+        if mode == 2 {
+            title = isRu ? "ИИ: предложить ответ" : "AI: Suggest Reply"
+            instruction = isRu ? "Предложи три коротких варианта ответа на сообщение пользователя, на языке сообщения. Каждый вариант с новой строки, без пояснений." : "Suggest three short replies to the user's message, in the message's language. One per line, no explanations."
+        } else if mode == 1 {
             title = isRu ? "ИИ: перевести" : "AI: Translate"
             instruction = isRu ? "Переведи сообщение пользователя на русский язык. Ответь только переводом." : "Translate the user's message into English. Reply with the translation only."
         } else {
