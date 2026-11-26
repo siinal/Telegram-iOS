@@ -119,6 +119,18 @@ public func sgSetShadowBanned(_ peerId: PeerId, _ value: Bool) {
 /// Whether an incoming message is hidden from the chat by the filters.
 public func sgIsMessageFiltered(_ message: Message, accountPeerId: PeerId) -> Bool {
     let settings = SGSimpleSettings.shared
+    if settings.hideMemberServiceMessages {
+        for media in message.media {
+            if let action = media as? TelegramMediaAction {
+                switch action.action {
+                case .addedMembers, .removedMembers, .joinedByLink, .joinedByRequest:
+                    return true
+                default:
+                    break
+                }
+            }
+        }
+    }
     if !message.flags.contains(.Incoming) || message.id.peerId == accountPeerId {
         return false
     }

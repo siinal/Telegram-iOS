@@ -136,6 +136,7 @@ private enum SGBoolSetting: String {
     case confirmStickerSend
     case confirmGifSend
     case confirmVoiceSend
+    case hideMemberServiceMessages
 }
 
 private enum SGOneFromManySetting: String {
@@ -236,6 +237,7 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.disclosure(id: id.count, section: .filters, link: .filterPatterns, text: ghostText("Шаблоны (\(SGSimpleSettings.shared.filterPatterns.count))", "Patterns (\(SGSimpleSettings.shared.filterPatterns.count))")))
     entries.append(.toggle(id: id.count, section: .filters, settingName: .filterHideBlocked, value: SGSimpleSettings.shared.filterHideBlocked, text: ghostText("Скрывать заблокированных в группах", "Hide Blocked Users in Groups"), enabled: filterOn))
     entries.append(.toggle(id: id.count, section: .filters, settingName: .filterInPrivateChats, value: SGSimpleSettings.shared.filterInPrivateChats, text: ghostText("Применять в личных чатах", "Apply in Private Chats"), enabled: filterOn))
+    entries.append(.toggle(id: id.count, section: .filters, settingName: .hideMemberServiceMessages, value: SGSimpleSettings.shared.hideMemberServiceMessages, text: ghostText("Скрывать «вошёл / вышел» в группах", "Hide Join and Leave Messages"), enabled: true))
     let shadowBanCount = SGSimpleSettings.shared.shadowBannedPeerIds.count
     entries.append(.disclosure(id: id.count, section: .filters, link: .clearShadowBan, text: ghostText("Очистить теневой бан (" + String(shadowBanCount) + ")", "Clear Shadow Ban (" + String(shadowBanCount) + ")")))
     entries.append(.notice(id: id.count, section: .filters, text: ghostText("Теневой бан: долгое нажатие на сообщение → Swiftgram → «Скрыть … (тень)», и сообщения этого человека пропадут во всех группах и каналах. Подходящие под шаблоны сообщения не показываются в чатах. Они не удаляются и снова появятся, если выключить фильтр.", "Shadow ban: long-press a message → Swiftgram → Hide … (Shadow Ban) to hide that person in all groups and channels. Messages matching the patterns are not shown in chats. They are not deleted and come back when the filter is off.")))
@@ -553,6 +555,8 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
             SGSimpleSettings.shared.confirmGifSend = value
         case .confirmVoiceSend:
             SGSimpleSettings.shared.confirmVoiceSend = value
+        case .hideMemberServiceMessages:
+            SGSimpleSettings.shared.hideMemberServiceMessages = value
         case .showProfileId:
             SGSimpleSettings.shared.showProfileId = value
         case .warnOnStoriesOpen:

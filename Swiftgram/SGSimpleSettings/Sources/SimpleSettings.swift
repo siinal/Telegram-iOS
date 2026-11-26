@@ -213,6 +213,7 @@ public class SGSimpleSettings {
         case confirmGifSend
         case ghostReadExceptionPeerIds
         case confirmVoiceSend
+        case hideMemberServiceMessages
     }
     
     public enum DownloadSpeedBoostValues: String, CaseIterable {
@@ -398,6 +399,7 @@ public class SGSimpleSettings {
         Keys.confirmGifSend.rawValue: false,
         Keys.ghostReadExceptionPeerIds.rawValue: [],
         Keys.confirmVoiceSend.rawValue: false,
+        Keys.hideMemberServiceMessages.rawValue: false,
     ]
     
     public static let groupDefaultValues: [String: Any] = [
@@ -787,6 +789,9 @@ public class SGSimpleSettings {
 
     @UserDefault(key: Keys.confirmVoiceSend.rawValue)
     public var confirmVoiceSend: Bool
+
+    @UserDefault(key: Keys.hideMemberServiceMessages.rawValue)
+    public var hideMemberServiceMessages: Bool
 }
 
 // MARK: Ghost mode
