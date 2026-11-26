@@ -276,20 +276,14 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
                         if body.isEmpty {
                             body = searchMessage.media.isEmpty ? "—" : (isRu ? "[медиа]" : "[media]")
                         }
-                        result.append(author + " · " + sent + "
-" + (isRu ? "удалено " : "deleted ") + deleted + "
-" + body)
+                        result.append(author + " · " + sent + "\n" + (isRu ? "удалено " : "deleted ") + deleted + "\n" + body)
                     }
                     return true
                 })
                 return result
             }
             |> deliverOnMainQueue).start(next: { items in
-                model.finish(text: items.isEmpty ? (isRu ? "В этом чате нет сохранённых удалённых сообщений." : "No saved deleted messages in this chat.") : items.joined(separator: "
-
-— — —
-
-"))
+                model.finish(text: items.isEmpty ? (isRu ? "В этом чате нет сохранённых удалённых сообщений." : "No saved deleted messages in this chat.") : items.joined(separator: "\n\n— — —\n\n"))
             })
         }))
     case let .ghostMarkRead(context):
