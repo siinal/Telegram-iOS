@@ -130,6 +130,7 @@ private enum SGBoolSetting: String {
     case filterInPrivateChats
     case removeLinkTracking
     case streamerMode
+    case hideSponsoredMessages
 }
 
 private enum SGOneFromManySetting: String {
@@ -232,6 +233,7 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.header(id: id.count, section: .linkPrivacy, text: ghostText("ПРИВАТНОСТЬ", "PRIVACY"), badge: nil))
     entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .removeLinkTracking, value: SGSimpleSettings.shared.removeLinkTracking, text: ghostText("Убирать слежку из ссылок", "Remove Link Tracking"), enabled: true))
     entries.append(.notice(id: id.count, section: .linkPrivacy, text: ghostText("Из отправляемых ссылок удаляются параметры отслеживания: utm_*, fbclid, gclid, si и другие.", "Tracking parameters such as utm_*, fbclid, gclid and si are removed from links you send.")))
+    entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .hideSponsoredMessages, value: SGSimpleSettings.shared.hideSponsoredMessages, text: ghostText("Скрывать рекламу в каналах", "Hide Sponsored Messages"), enabled: true))
     entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .streamerMode, value: SGSimpleSettings.shared.streamerMode, text: ghostText("Режим стримера", "Streamer Mode"), enabled: true))
     entries.append(.notice(id: id.count, section: .linkPrivacy, text: ghostText("Список чатов и переписки не видны на записи и трансляции экрана и на скриншотах. Нужен перезапуск.", "The chat list and chats are hidden from screen recordings, streams and screenshots. Requires a restart.")))
 
@@ -523,6 +525,8 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
         case .streamerMode:
             SGSimpleSettings.shared.streamerMode = value
             askForRestart?()
+        case .hideSponsoredMessages:
+            SGSimpleSettings.shared.hideSponsoredMessages = value
         case .showProfileId:
             SGSimpleSettings.shared.showProfileId = value
         case .warnOnStoriesOpen:

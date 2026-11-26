@@ -52,3 +52,8 @@ func sgGhostAfterOutgoingMessage(account: Account, peerId: PeerId) {
         let _ = (offline |> delay(8.0, queue: Queue.concurrentDefaultQueue())).startStandalone()
     }
 }
+
+/// Tells the server the chat is read up to what was read on this device, even in ghost mode.
+public func sgGhostMarkChatRead(account: Account, peerId: PeerId) {
+    let _ = sgGhostPushReadStateAfterSend(network: account.network, postbox: account.postbox, stateManager: account.stateManager, peerId: peerId).startStandalone()
+}

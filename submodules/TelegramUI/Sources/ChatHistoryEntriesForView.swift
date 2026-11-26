@@ -1,3 +1,4 @@
+import SGSimpleSettings
 import Foundation
 import UIKit
 import Postbox
@@ -91,6 +92,9 @@ func chatHistoryEntriesForView(
     pinToTopStableId: EngineMessage.StableId?
 ) -> ([ChatHistoryEntry], ChatHistoryEntriesForViewState) {
     var currentState = currentState
+    // MARK: Swiftgram hide sponsored messages
+    let adMessage = SGSimpleSettings.shared.hideSponsoredMessages ? nil : adMessage
+    let dynamicAdMessages = SGSimpleSettings.shared.hideSponsoredMessages ? [] : dynamicAdMessages
     
     if historyAppearsCleared {
         return ([], currentState)

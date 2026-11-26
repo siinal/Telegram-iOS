@@ -102,6 +102,7 @@ enum SGContextMenuActionFactory {
     case editHistory(controllerInteraction: ChatControllerInteraction, context: AccountContext)
     case lyrics(controllerInteraction: ChatControllerInteraction, context: AccountContext, title: String, performer: String?)
     case askAI(controllerInteraction: ChatControllerInteraction, context: AccountContext, translate: Bool)
+    case ghostMarkRead(context: AccountContext)
 }
 
 /// Title and performer of a music file in the message, for looking up its lyrics.
@@ -206,6 +207,15 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
                     model.finish(text: (isRu ? "Ошибка: " : "Error: ") + error.localizedDescription)
                 }
             })
+        }))
+    case let .ghostMarkRead(context):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        return .action(ContextMenuActionItem(text: isRu ? "Прочитать (призрак)" : "Mark as Read (Ghost)", icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Read"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            f(.default)
+            sgGhostMarkChatRead(account: context.account, peerId: message.id.peerId)
         }))
     }
 }

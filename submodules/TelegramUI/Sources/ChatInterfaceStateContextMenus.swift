@@ -1605,6 +1605,9 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         if let musicInfo = sgMusicInfo(message: message) {
             actions.append(sgMakeContextMenuAction(.lyrics(controllerInteraction: controllerInteraction, context: context, title: musicInfo.title, performer: musicInfo.performer), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
         }
+        if SGSimpleSettings.shared.ghostBlocksReadMessages && message.id.namespace == Namespaces.Message.Cloud {
+            sgActions.append(sgMakeContextMenuAction(.ghostMarkRead(context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+        }
         if sgIsAIServiceConfigured && !message.text.isEmpty {
             sgActions.append(sgMakeContextMenuAction(.askAI(controllerInteraction: controllerInteraction, context: context, translate: false), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
             sgActions.append(sgMakeContextMenuAction(.askAI(controllerInteraction: controllerInteraction, context: context, translate: true), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
