@@ -100,6 +100,23 @@ enum SGContextMenuActionFactory {
     case saveToCloud(interfaceInteraction: ChatPanelInterfaceInteraction, selectAll: Bool, isImage: Bool, messages: [EngineRawMessage])
     case hideForwardName(interfaceInteraction: ChatPanelInterfaceInteraction, selectAll: Bool, isImage: Bool, messages: [EngineRawMessage])
     case editHistory(controllerInteraction: ChatControllerInteraction, context: AccountContext)
+    case lyrics(controllerInteraction: ChatControllerInteraction, context: AccountContext, title: String, performer: String?)
+    case askAI(controllerInteraction: ChatControllerInteraction, context: AccountContext, translate: Bool)
+}
+
+/// Title and performer of a music file in the message, for looking up its lyrics.
+func sgMusicInfo(message: EngineRawMessage) -> (title: String, performer: String?)? {
+    for media in message.media {
+        guard let file = media as? TelegramMediaFile, file.isMusic else {
+            continue
+        }
+        for attribute in file.attributes {
+            if case let .Audio(_, _, rawTitle, performer, _) = attribute, let title = rawTitle, !title.isEmpty {
+                return (title, performer)
+            }
+        }
+    }
+    return nil
 }
 
 func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentationInterfaceState: ChatPresentationInterfaceState, message: EngineRawMessage) -> ContextMenuItem {
@@ -148,6 +165,47 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
             let alertController = textAlertController(context: context, title: title, text: parts.joined(separator: "\n\n"), actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})])
             controllerInteraction.presentController(alertController, nil)
+        }))
+    case let .lyrics(controllerInteraction, context, title, performer):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        return .action(ContextMenuActionItem(text: isRu ? "Текст песни" : "Lyrics", icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            f(.default)
+            let model = SGTextViewerModel(text: "", isLoading: true)
+            let viewerTitle = [performer, title].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " — ")
+            controllerInteraction.navigationController()?.pushViewController(sgTextViewerController(context: context, title: viewerTitle, model: model))
+            sgFetchLyrics(title: title, artist: performer, completion: { lyrics in
+                model.finish(text: lyrics ?? (isRu ? "Текст не найден на lrclib.net." : "No lyrics found on lrclib.net."))
+            })
+        }))
+    case let .askAI(controllerInteraction, context, translate):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        let title: String
+        let instruction: String
+        if translate {
+            title = isRu ? "ИИ: перевести" : "AI: Translate"
+            instruction = isRu ? "Переведи сообщение пользователя на русский язык. Ответь только переводом." : "Translate the user's message into English. Reply with the translation only."
+        } else {
+            title = isRu ? "ИИ: пересказать" : "AI: Summarize"
+            instruction = isRu ? "Кратко перескажи сообщение пользователя на русском языке и объясни непонятные места." : "Briefly summarize the user's message in English and explain anything unclear."
+        }
+        return .action(ContextMenuActionItem(text: title, icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Translate"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            f(.default)
+            let model = SGTextViewerModel(text: "", isLoading: true)
+            controllerInteraction.navigationController()?.pushViewController(sgTextViewerController(context: context, title: title, model: model))
+            sgAskAI(instruction: instruction, text: message.text, completion: { result in
+                switch result {
+                case let .success(answer):
+                    model.finish(text: answer)
+                case let .failure(error):
+                    model.finish(text: (isRu ? "Ошибка: " : "Error: ") + error.localizedDescription)
+                }
+            })
         }))
     }
 }

@@ -1,3 +1,4 @@
+import SGSettingsUI
 import SGSimpleSettings // MARK: Swiftgram
 import PeerInfoUI
 import Foundation
@@ -1599,6 +1600,14 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         // MARK: Swiftgram edit history
         if !message.sgEditHistory.isEmpty {
             actions.append(sgMakeContextMenuAction(.editHistory(controllerInteraction: controllerInteraction, context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+        }
+        // MARK: Swiftgram lyrics and AI
+        if let musicInfo = sgMusicInfo(message: message) {
+            actions.append(sgMakeContextMenuAction(.lyrics(controllerInteraction: controllerInteraction, context: context, title: musicInfo.title, performer: musicInfo.performer), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+        }
+        if sgIsAIServiceConfigured && !message.text.isEmpty {
+            sgActions.append(sgMakeContextMenuAction(.askAI(controllerInteraction: controllerInteraction, context: context, translate: false), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+            sgActions.append(sgMakeContextMenuAction(.askAI(controllerInteraction: controllerInteraction, context: context, translate: true), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
         }
         //
         

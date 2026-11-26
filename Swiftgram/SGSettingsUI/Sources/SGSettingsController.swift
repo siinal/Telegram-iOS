@@ -32,6 +32,7 @@ private enum SGControllerSection: Int32, SGItemListSection {
     case savedMessages
     case filters
     case linkPrivacy
+    case sgTools
     case tabs
     case folders
     case chatList
@@ -151,6 +152,7 @@ private enum SGDisclosureLink: String {
     case contentSettings
     case languageSettings
     case filterPatterns
+    case aiService
 }
 
 private struct PeerNameColorScreenState: Equatable {
@@ -232,6 +234,11 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.notice(id: id.count, section: .linkPrivacy, text: ghostText("Из отправляемых ссылок удаляются параметры отслеживания: utm_*, fbclid, gclid, si и другие.", "Tracking parameters such as utm_*, fbclid, gclid and si are removed from links you send.")))
     entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .streamerMode, value: SGSimpleSettings.shared.streamerMode, text: ghostText("Режим стримера", "Streamer Mode"), enabled: true))
     entries.append(.notice(id: id.count, section: .linkPrivacy, text: ghostText("Список чатов и переписки не видны на записи и трансляции экрана и на скриншотах. Нужен перезапуск.", "The chat list and chats are hidden from screen recordings, streams and screenshots. Requires a restart.")))
+
+    // MARK: Tools
+    entries.append(.header(id: id.count, section: .sgTools, text: ghostText("ИНСТРУМЕНТЫ", "TOOLS"), badge: nil))
+    entries.append(.disclosure(id: id.count, section: .sgTools, link: .aiService, text: ghostText("ИИ-сервис", "AI Service")))
+    entries.append(.notice(id: id.count, section: .sgTools, text: ghostText("После настройки в меню Swiftgram у сообщения появятся «ИИ: пересказать» и «ИИ: перевести». «Текст песни» есть в меню любого музыкального файла.", "Once set up, the message Swiftgram menu gets AI: Summarize and AI: Translate. Lyrics are in the menu of any music file.")))
 
     entries.append(.header(id: id.count, section: .tabs, text: i18n("Settings.Tabs.Header", lang), badge: nil))
     entries.append(.toggle(id: id.count, section: .tabs, settingName: .hideTabBar, value: SGSimpleSettings.shared.hideTabBar, text: i18n("Settings.Tabs.HideTabBar", lang), enabled: true))
@@ -800,6 +807,8 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
                 pushControllerImpl?(context.sharedContext.makeLocalizationListController(context: context))
             case .filterPatterns:
                 pushControllerImpl?(sgFilterPatternsController(context: context))
+            case .aiService:
+                pushControllerImpl?(sgAIServiceController(context: context))
             case .contentSettings:
                 let _ = (getSGSettingsURL(context: context) |> deliverOnMainQueue).start(next: { [weak context] url in
                     guard let strongContext = context else {

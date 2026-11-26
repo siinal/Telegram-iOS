@@ -202,6 +202,9 @@ public class SGSimpleSettings {
         case filterInPrivateChats
         case removeLinkTracking
         case streamerMode
+        case aiEndpoint
+        case aiApiKey
+        case aiModel
     }
     
     public enum DownloadSpeedBoostValues: String, CaseIterable {
@@ -376,6 +379,9 @@ public class SGSimpleSettings {
         Keys.filterInPrivateChats.rawValue: false,
         Keys.removeLinkTracking.rawValue: true,
         Keys.streamerMode.rawValue: false,
+        Keys.aiEndpoint.rawValue: "",
+        Keys.aiApiKey.rawValue: "",
+        Keys.aiModel.rawValue: "",
     ]
     
     public static let groupDefaultValues: [String: Any] = [
@@ -732,6 +738,15 @@ public class SGSimpleSettings {
 
     @UserDefault(key: Keys.streamerMode.rawValue)
     public var streamerMode: Bool
+
+    @UserDefault(key: Keys.aiEndpoint.rawValue)
+    public var aiEndpoint: String
+
+    @UserDefault(key: Keys.aiApiKey.rawValue)
+    public var aiApiKey: String
+
+    @UserDefault(key: Keys.aiModel.rawValue)
+    public var aiModel: String
 }
 
 // MARK: Ghost mode
