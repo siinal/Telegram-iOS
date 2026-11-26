@@ -138,6 +138,7 @@ private enum SGBoolSetting: String {
     case confirmGifSend
     case confirmVoiceSend
     case hideMemberServiceMessages
+    case semiTransparentDeletedMessages
 }
 
 private enum SGOneFromManySetting: String {
@@ -244,6 +245,7 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
         deletedMarkValue = ghostText("текст", "text")
     }
     entries.append(.disclosure(id: id.count, section: .savedMessages, link: .allDeletedMessages, text: ghostText("Все удалённые сообщения", "All Deleted Messages")))
+    entries.append(.toggle(id: id.count, section: .savedMessages, settingName: .semiTransparentDeletedMessages, value: SGSimpleSettings.shared.semiTransparentDeletedMessages, text: ghostText("Полупрозрачные удалённые", "Semi-Transparent Deleted"), enabled: SGSimpleSettings.shared.saveDeletedMessages))
     entries.append(.oneFromManySelector(id: id.count, section: .savedMessages, settingName: .deletedMarkStyle, text: ghostText("Пометка удалённых", "Deleted Mark"), value: deletedMarkValue, enabled: SGSimpleSettings.shared.saveDeletedMessages))
     let editedMarkValue: String
     switch SGSimpleSettings.shared.editedMarkStyle {
@@ -589,6 +591,8 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
             SGSimpleSettings.shared.confirmVoiceSend = value
         case .hideMemberServiceMessages:
             SGSimpleSettings.shared.hideMemberServiceMessages = value
+        case .semiTransparentDeletedMessages:
+            SGSimpleSettings.shared.semiTransparentDeletedMessages = value
         case .showProfileId:
             SGSimpleSettings.shared.showProfileId = value
         case .warnOnStoriesOpen:

@@ -683,6 +683,7 @@ open class ChatMessageItemView: ListViewItemNode, ChatMessageItemNodeProtocol {
     
     private var wasFilteredKeywordTested: Bool = false
     private var matchedFilterKeyword: String? = nil
+    private var sgDimmedAsDeleted: Bool = false // MARK: Swiftgram
     
     public required init(rotated: Bool) {
         super.init(layerBacked: false, rotated: rotated)
@@ -707,6 +708,10 @@ open class ChatMessageItemView: ListViewItemNode, ChatMessageItemNodeProtocol {
         self.frame = CGRect()
         self.wasFilteredKeywordTested = false
         self.matchedFilterKeyword = nil
+        if self.sgDimmedAsDeleted {
+            self.sgDimmedAsDeleted = false
+            self.alpha = 1.0
+        }
     }
     
     open func setupItem(_ item: ChatMessageItem, synchronousLoad: Bool) {
@@ -722,6 +727,18 @@ open class ChatMessageItemView: ListViewItemNode, ChatMessageItemNodeProtocol {
             }
         }
         self.wasFilteredKeywordTested = true
+        
+        // MARK: Swiftgram semi-transparent deleted messages
+        let isDeleted = SGSimpleSettings.shared.semiTransparentDeletedMessages && item.message.attributes.contains(where: { $0 is SGDeletedMessageAttribute })
+        if self.matchedFilterKeyword == nil {
+            if isDeleted && !self.sgDimmedAsDeleted {
+                self.sgDimmedAsDeleted = true
+                self.alpha = 0.55
+            } else if !isDeleted && self.sgDimmedAsDeleted {
+                self.sgDimmedAsDeleted = false
+                self.alpha = 1.0
+            }
+        }
     }
     
     open func updateAccessibilityData(_ accessibilityData: ChatMessageAccessibilityData) {
