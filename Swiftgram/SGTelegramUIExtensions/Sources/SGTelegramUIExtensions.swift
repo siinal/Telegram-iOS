@@ -104,6 +104,7 @@ enum SGContextMenuActionFactory {
     case askAI(controllerInteraction: ChatControllerInteraction, context: AccountContext, translate: Bool)
     case ghostMarkRead(context: AccountContext)
     case messageShot(context: AccountContext, view: () -> UIView?)
+    case deletedList(controllerInteraction: ChatControllerInteraction, context: AccountContext)
 }
 
 /// Draws a message bubble on the chat background colour, with a margin.
@@ -246,6 +247,50 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
             Queue.mainQueue().after(0.3) {
                 context.sharedContext.mainWindow?.presentNative(activityController)
             }
+        }))
+    case let .deletedList(controllerInteraction, context):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        let title = isRu ? "Удалённые в этом чате" : "Deleted in This Chat"
+        let peerId = message.id.peerId
+        return .action(ContextMenuActionItem(text: title, icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Delete"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            f(.default)
+            let model = SGTextViewerModel(text: "", isLoading: true)
+            controllerInteraction.navigationController()?.pushViewController(sgTextViewerController(context: context, title: title, model: model))
+            let formatter = DateFormatter()
+            formatter.dateStyle = .short
+            formatter.timeStyle = .short
+            let _ = (context.account.postbox.transaction { transaction -> [String] in
+                var result: [String] = []
+                transaction.withAllMessages(peerId: peerId, reversed: true, { searchMessage in
+                    if result.count >= 1000 {
+                        return false
+                    }
+                    if let deletedDate = searchMessage.sgDeletedDate {
+                        let author = searchMessage.author.flatMap { EnginePeer($0).displayTitle(strings: chatPresentationInterfaceState.strings, displayOrder: chatPresentationInterfaceState.nameDisplayOrder) } ?? ""
+                        let sent = formatter.string(from: Date(timeIntervalSince1970: Double(searchMessage.timestamp)))
+                        let deleted = formatter.string(from: Date(timeIntervalSince1970: Double(deletedDate)))
+                        var body = searchMessage.text
+                        if body.isEmpty {
+                            body = searchMessage.media.isEmpty ? "—" : (isRu ? "[медиа]" : "[media]")
+                        }
+                        result.append(author + " · " + sent + "
+" + (isRu ? "удалено " : "deleted ") + deleted + "
+" + body)
+                    }
+                    return true
+                })
+                return result
+            }
+            |> deliverOnMainQueue).start(next: { items in
+                model.finish(text: items.isEmpty ? (isRu ? "В этом чате нет сохранённых удалённых сообщений." : "No saved deleted messages in this chat.") : items.joined(separator: "
+
+— — —
+
+"))
+            })
         }))
     case let .ghostMarkRead(context):
         let lang = chatPresentationInterfaceState.strings.baseLanguageCode

@@ -1608,6 +1608,9 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         if SGSimpleSettings.shared.ghostBlocksReadMessages && message.id.namespace == Namespaces.Message.Cloud {
             sgActions.append(sgMakeContextMenuAction(.ghostMarkRead(context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
         }
+        if SGSimpleSettings.shared.saveDeletedMessages {
+            sgActions.append(sgMakeContextMenuAction(.deletedList(controllerInteraction: controllerInteraction, context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+        }
         if let messageNode {
             sgActions.append(sgMakeContextMenuAction(.messageShot(context: context, view: { [weak messageNode] in
                 return messageNode?.view
