@@ -262,7 +262,7 @@ func historyFillReconciliation(transaction: Transaction, peer: Peer, peerInput: 
         storedIds = []
     }
     let candidates = storedIds.filter { id in
-        return id.peerId == peer.id && id.namespace == namespace && filledRange.contains(id.id) && !answerIds.contains(id)
+        return id.peerId == peer.id && id.namespace == namespace && filledRange.contains(id.id) && !answerIds.contains(id) && !sgIsKeptDeletedMessage(transaction: transaction, id: id)
     }
     if candidates.isEmpty {
         return nil

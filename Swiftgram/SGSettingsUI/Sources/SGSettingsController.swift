@@ -29,6 +29,7 @@ private enum SGControllerSection: Int32, SGItemListSection {
     case trending
     case content
     case ghost
+    case savedMessages
     case tabs
     case folders
     case chatList
@@ -117,6 +118,9 @@ private enum SGBoolSetting: String {
     case ghostDontSendUploadProgress
     case ghostSendOfflineAfterOnline
     case ghostMarkReadAfterSend
+    case saveDeletedMessages
+    case saveEditHistory
+    case saveDeletedForBots
 }
 
 private enum SGOneFromManySetting: String {
@@ -195,6 +199,13 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostSendOfflineAfterOnline, value: SGSimpleSettings.shared.ghostSendOfflineAfterOnline, text: ghostText("Уходить в оффлайн после отправки", "Go Offline After Sending"), enabled: ghostOn && SGSimpleSettings.shared.ghostDontSendOnline))
     entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostMarkReadAfterSend, value: SGSimpleSettings.shared.ghostMarkReadAfterSend, text: ghostText("Читать чат после отправки сообщения", "Mark Chat Read After Sending"), enabled: ghostOn && SGSimpleSettings.shared.ghostDontReadMessages))
     entries.append(.notice(id: id.count, section: .ghost, text: ghostText("Отправка сообщения всё равно делает вас «в сети» — так работает сервер Telegram. Использование может нарушать правила Telegram.", "Sending a message still shows you online, this is how Telegram servers work. Using this may violate Telegram's Terms of Service.")))
+
+    // MARK: Saved deleted and edited messages
+    entries.append(.header(id: id.count, section: .savedMessages, text: ghostText("СОХРАНЕНИЕ СООБЩЕНИЙ", "MESSAGE SAVING"), badge: nil))
+    entries.append(.toggle(id: id.count, section: .savedMessages, settingName: .saveDeletedMessages, value: SGSimpleSettings.shared.saveDeletedMessages, text: ghostText("Сохранять удалённые сообщения", "Save Deleted Messages"), enabled: true))
+    entries.append(.toggle(id: id.count, section: .savedMessages, settingName: .saveEditHistory, value: SGSimpleSettings.shared.saveEditHistory, text: ghostText("Сохранять историю изменений", "Save Edit History"), enabled: true))
+    entries.append(.toggle(id: id.count, section: .savedMessages, settingName: .saveDeletedForBots, value: SGSimpleSettings.shared.saveDeletedForBots, text: ghostText("Сохранять в чатах с ботами", "Save in Bot Chats"), enabled: SGSimpleSettings.shared.saveDeletedMessages))
+    entries.append(.notice(id: id.count, section: .savedMessages, text: ghostText("Удалённые собеседником сообщения остаются на этом устройстве с пометкой «удалено». История изменений открывается долгим нажатием на сообщение.", "Messages deleted by others stay on this device marked as deleted. Long-press a message to see its edit history.")))
 
     entries.append(.header(id: id.count, section: .tabs, text: i18n("Settings.Tabs.Header", lang), badge: nil))
     entries.append(.toggle(id: id.count, section: .tabs, settingName: .hideTabBar, value: SGSimpleSettings.shared.hideTabBar, text: i18n("Settings.Tabs.HideTabBar", lang), enabled: true))
@@ -449,6 +460,12 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
             SGSimpleSettings.shared.ghostSendOfflineAfterOnline = value
         case .ghostMarkReadAfterSend:
             SGSimpleSettings.shared.ghostMarkReadAfterSend = value
+        case .saveDeletedMessages:
+            SGSimpleSettings.shared.saveDeletedMessages = value
+        case .saveEditHistory:
+            SGSimpleSettings.shared.saveEditHistory = value
+        case .saveDeletedForBots:
+            SGSimpleSettings.shared.saveDeletedForBots = value
         case .showProfileId:
             SGSimpleSettings.shared.showProfileId = value
         case .warnOnStoriesOpen:

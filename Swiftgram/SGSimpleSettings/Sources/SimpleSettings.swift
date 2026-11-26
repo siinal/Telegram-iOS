@@ -193,6 +193,9 @@ public class SGSimpleSettings {
         case ghostSendOfflineAfterOnline
         case ghostMarkReadAfterSend
         case ghostShowToggleInChatList
+        case saveDeletedMessages
+        case saveEditHistory
+        case saveDeletedForBots
     }
     
     public enum DownloadSpeedBoostValues: String, CaseIterable {
@@ -358,6 +361,9 @@ public class SGSimpleSettings {
         Keys.ghostSendOfflineAfterOnline.rawValue: true,
         Keys.ghostMarkReadAfterSend.rawValue: true,
         Keys.ghostShowToggleInChatList.rawValue: true,
+        Keys.saveDeletedMessages.rawValue: true,
+        Keys.saveEditHistory.rawValue: true,
+        Keys.saveDeletedForBots.rawValue: false,
     ]
     
     public static let groupDefaultValues: [String: Any] = [
@@ -687,6 +693,15 @@ public class SGSimpleSettings {
 
     @UserDefault(key: Keys.ghostShowToggleInChatList.rawValue)
     public var ghostShowToggleInChatList: Bool
+
+    @UserDefault(key: Keys.saveDeletedMessages.rawValue)
+    public var saveDeletedMessages: Bool
+
+    @UserDefault(key: Keys.saveEditHistory.rawValue)
+    public var saveEditHistory: Bool
+
+    @UserDefault(key: Keys.saveDeletedForBots.rawValue)
+    public var saveDeletedForBots: Bool
 }
 
 // MARK: Ghost mode

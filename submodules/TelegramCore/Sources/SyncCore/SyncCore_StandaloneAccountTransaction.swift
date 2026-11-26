@@ -187,6 +187,13 @@ public let telegramPostboxSeedConfiguration: SeedConfiguration = {
             if let previousEphemeralReplacement, !updated.contains(where: { $0 is EphemeralReplacementMessageAttribute }) {
                 updated.append(previousEphemeralReplacement)
             }
+            // MARK: Swiftgram saved deleted and edited messages
+            if let previousDeleted = previous.first(where: { $0 is SGDeletedMessageAttribute }), !updated.contains(where: { $0 is SGDeletedMessageAttribute }) {
+                updated.append(previousDeleted)
+            }
+            if let previousEditHistory = previous.first(where: { $0 is SGEditHistoryMessageAttribute }), !updated.contains(where: { $0 is SGEditHistoryMessageAttribute }) {
+                updated.append(previousEditHistory)
+            }
         },
         decodeMessageThreadInfo: { entry in
             guard let data = entry.get(MessageHistoryThreadData.self) else {

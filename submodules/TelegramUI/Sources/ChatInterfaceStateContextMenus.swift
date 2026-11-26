@@ -1596,6 +1596,10 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         } else {
             sgActions.append(showJsonAction)
         }
+        // MARK: Swiftgram edit history
+        if !message.sgEditHistory.isEmpty {
+            actions.append(sgMakeContextMenuAction(.editHistory(controllerInteraction: controllerInteraction, context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+        }
         //
         
         var threadId: Int64?

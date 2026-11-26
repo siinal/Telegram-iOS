@@ -211,6 +211,8 @@ func confirmStoredMessages(accountPeerId: PeerId, postbox: Postbox, source: Fetc
 /// Returns the ids it deleted: the private-chat and basic-group ones, then the channel ones, each in the order given.
 @discardableResult
 func deleteStoredMessagesAsReceivedDeletion(transaction: Transaction, mediaBox: MediaBox, ids: [MessageId]) -> [MessageId] {
+    // MARK: Swiftgram saved deleted messages
+    let ids = sgKeepDeletedMessages(transaction: transaction, ids: ids)
     var regularIds: [MessageId] = []
     var channelIds: [MessageId] = []
     for id in ids {
@@ -323,7 +325,8 @@ func storedCloudMessagesAboveTopMessages(transaction: Transaction, fetchedChats:
         var lowerBound = topId
         while lowerBound < Int32.max {
             let page = transaction.messageIdsInRange(peerId: peerId, namespace: Namespaces.Message.Cloud, range: (lowerBound + 1) ... Int32.max, limit: pageLimit)
-            ids.append(contentsOf: page)
+            // MARK: Swiftgram: a kept deleted message is not asked about again
+            ids.append(contentsOf: page.filter { !sgIsKeptDeletedMessage(transaction: transaction, id: $0) })
             guard page.count >= pageLimit, let last = page.last, last.id > lowerBound else {
                 break
             }

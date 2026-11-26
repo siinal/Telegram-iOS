@@ -99,6 +99,7 @@ enum SGContextMenuActionFactory {
     case json(controllerInteraction: ChatControllerInteraction, context: AccountContext)
     case saveToCloud(interfaceInteraction: ChatPanelInterfaceInteraction, selectAll: Bool, isImage: Bool, messages: [EngineRawMessage])
     case hideForwardName(interfaceInteraction: ChatPanelInterfaceInteraction, selectAll: Bool, isImage: Bool, messages: [EngineRawMessage])
+    case editHistory(controllerInteraction: ChatControllerInteraction, context: AccountContext)
 }
 
 func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentationInterfaceState: ChatPresentationInterfaceState, message: EngineRawMessage) -> ContextMenuItem {
@@ -123,6 +124,30 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
         }, action: { _, f in
             interfaceInteraction.forwardMessages(selectAll || isImage ? messages : [message], "forwardMessagesWithNoNames")
             f(.dismissWithoutContent)
+        }))
+    case let .editHistory(controllerInteraction, context):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        let title = isRu ? "История изменений" : "Edit History"
+        return .action(ContextMenuActionItem(text: title, icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Edit"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            f(.default)
+            let formatter = DateFormatter()
+            formatter.dateStyle = .short
+            formatter.timeStyle = .short
+            var parts: [String] = []
+            for entry in message.sgEditHistory {
+                let dateString = formatter.string(from: Date(timeIntervalSince1970: Double(entry.date)))
+                parts.append(dateString + "\n" + entry.text)
+            }
+            let currentDate = message.editedTime ?? message.timestamp
+            let currentLabel = isRu ? "сейчас" : "current"
+            let currentDateString = formatter.string(from: Date(timeIntervalSince1970: Double(currentDate)))
+            parts.append(currentDateString + " (" + currentLabel + ")\n" + message.text)
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            let alertController = textAlertController(context: context, title: title, text: parts.joined(separator: "\n\n"), actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})])
+            controllerInteraction.presentController(alertController, nil)
         }))
     }
 }

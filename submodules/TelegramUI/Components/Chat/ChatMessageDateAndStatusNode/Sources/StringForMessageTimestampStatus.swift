@@ -250,6 +250,13 @@ public func stringForMessageTimestampStatus(
         authorTitle = nil
     }
     
+    // MARK: Swiftgram saved deleted messages
+    if message.attributes.contains(where: { $0 is SGDeletedMessageAttribute }) {
+        let lang = strings.baseLanguageCode
+        let deletedLabel = (lang == "ru" || lang == "uk" || lang == "be") ? "удалено" : "deleted"
+        dateText = "\(deletedLabel) \(dateText)"
+    }
+
     if case .minimal = format {
         
     } else {
