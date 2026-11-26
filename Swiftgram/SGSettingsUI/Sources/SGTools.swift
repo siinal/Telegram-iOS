@@ -196,6 +196,7 @@ private struct SGAIServiceSettingsView: View {
     @State private var endpoint: String = SGSimpleSettings.shared.aiEndpoint
     @State private var apiKey: String = SGSimpleSettings.shared.aiApiKey
     @State private var model: String = SGSimpleSettings.shared.aiModel
+    @State private var customPrompt: String = SGSimpleSettings.shared.aiCustomPrompt
 
     var body: some View {
         List {
@@ -222,6 +223,12 @@ private struct SGAIServiceSettingsView: View {
                     .autocapitalization(.none)
                     .onChange(of: model) { value in
                         SGSimpleSettings.shared.aiModel = value
+                    }
+            }
+            Section(header: Text(sgToolsText(lang, "СВОЙ ЗАПРОС", "CUSTOM PROMPT")), footer: Text(sgToolsText(lang, "Если заполнено, в меню сообщения появится «ИИ: свой запрос» с этой инструкцией.", "When set, the message menu gets AI: Custom Prompt with this instruction."))) {
+                TextField(sgToolsText(lang, "Например: найди ошибки в тексте", "For example: find mistakes in the text"), text: $customPrompt)
+                    .onChange(of: customPrompt) { value in
+                        SGSimpleSettings.shared.aiCustomPrompt = value
                     }
             }
         }

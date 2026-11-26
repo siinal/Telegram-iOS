@@ -1638,6 +1638,9 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             sgActions.append(sgMakeContextMenuAction(.askAI(controllerInteraction: controllerInteraction, context: context, mode: 0), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
             sgActions.append(sgMakeContextMenuAction(.askAI(controllerInteraction: controllerInteraction, context: context, mode: 1), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
             sgActions.append(sgMakeContextMenuAction(.askAI(controllerInteraction: controllerInteraction, context: context, mode: 2), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+            if !SGSimpleSettings.shared.aiCustomPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                sgActions.append(sgMakeContextMenuAction(.askAI(controllerInteraction: controllerInteraction, context: context, mode: 3), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+            }
         }
         //
         

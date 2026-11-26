@@ -1,3 +1,4 @@
+import SGSimpleSettings
 import SGDebugUI
 import SGSettingsUI
 import SGStrings
@@ -216,7 +217,10 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
         let isRu = lang == "ru" || lang == "uk" || lang == "be"
         let title: String
         let instruction: String
-        if mode == 2 {
+        if mode == 3 {
+            title = isRu ? "ИИ: свой запрос" : "AI: Custom Prompt"
+            instruction = SGSimpleSettings.shared.aiCustomPrompt
+        } else if mode == 2 {
             title = isRu ? "ИИ: предложить ответ" : "AI: Suggest Reply"
             instruction = isRu ? "Предложи три коротких варианта ответа на сообщение пользователя, на языке сообщения. Каждый вариант с новой строки, без пояснений." : "Suggest three short replies to the user's message, in the message's language. One per line, no explanations."
         } else if mode == 1 {
