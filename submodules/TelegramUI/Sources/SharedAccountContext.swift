@@ -2478,7 +2478,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     }
 
     public func openUserGeneratedUrl(context: AccountContext, peerId: EnginePeer.Id?, url: String, webpage: TelegramMediaWebpage?, concealed: Bool, forceConcealed: Bool, skipUrlAuth: Bool, skipConcealedAlert: Bool, forceDark: Bool, present: @escaping (ViewController) -> Void, openResolved: @escaping (ResolvedUrl) -> Void, progress: Promise<Bool>?, alertDisplayUpdated: ((ViewController?) -> Void)?, concealedAlertOption: OpenUserGeneratedUrlConcealedAlertOption?) -> Disposable {
-        return OpenUserGeneratedUrl.openUserGeneratedUrl(context: context, peerId: peerId, url: url, webpage: webpage, concealed: concealed, forceConcealed: forceConcealed, skipUrlAuth: skipUrlAuth, skipConcealedAlert: skipConcealedAlert, forceDark: forceDark, present: present, openResolved: openResolved, progress: progress, alertDisplayUpdated: alertDisplayUpdated, concealedAlertOption: concealedAlertOption)
+        return OpenUserGeneratedUrl.openUserGeneratedUrl(context: context, peerId: peerId, url: url, webpage: webpage, concealed: concealed, forceConcealed: forceConcealed, skipUrlAuth: skipUrlAuth, skipConcealedAlert: skipConcealedAlert || SGSimpleSettings.shared.disableOpenLinkWarning, forceDark: forceDark, present: present, openResolved: openResolved, progress: progress, alertDisplayUpdated: alertDisplayUpdated, concealedAlertOption: concealedAlertOption)
     }
 
     public func makeDeviceContactInfoController(context: ShareControllerAccountContext, environment: ShareControllerEnvironment, subject: DeviceContactInfoSubject, completed: (() -> Void)?, cancelled: (() -> Void)?) -> ViewController {
