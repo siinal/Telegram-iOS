@@ -147,6 +147,7 @@ private enum SGOneFromManySetting: String {
 //    case allChatsFolderPositionOverride
     case translationBackend
     case transcriptionBackend
+    case deletedMarkStyle
 }
 
 private enum SGSliderSetting: String {
@@ -227,6 +228,16 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.toggle(id: id.count, section: .savedMessages, settingName: .saveDeletedMessages, value: SGSimpleSettings.shared.saveDeletedMessages, text: ghostText("Сохранять удалённые сообщения", "Save Deleted Messages"), enabled: true))
     entries.append(.toggle(id: id.count, section: .savedMessages, settingName: .saveEditHistory, value: SGSimpleSettings.shared.saveEditHistory, text: ghostText("Сохранять историю изменений", "Save Edit History"), enabled: true))
     entries.append(.toggle(id: id.count, section: .savedMessages, settingName: .saveDeletedForBots, value: SGSimpleSettings.shared.saveDeletedForBots, text: ghostText("Сохранять в чатах с ботами", "Save in Bot Chats"), enabled: SGSimpleSettings.shared.saveDeletedMessages))
+    let deletedMarkValue: String
+    switch SGSimpleSettings.shared.deletedMarkStyle {
+    case "icon":
+        deletedMarkValue = "🗑"
+    case "none":
+        deletedMarkValue = ghostText("нет", "none")
+    default:
+        deletedMarkValue = ghostText("текст", "text")
+    }
+    entries.append(.oneFromManySelector(id: id.count, section: .savedMessages, settingName: .deletedMarkStyle, text: ghostText("Пометка удалённых", "Deleted Mark"), value: deletedMarkValue, enabled: SGSimpleSettings.shared.saveDeletedMessages))
     entries.append(.toggle(id: id.count, section: .savedMessages, settingName: .saveSelfDestructing, value: SGSimpleSettings.shared.saveSelfDestructing, text: ghostText("Не удалять исчезающие сообщения", "Keep Self-Destructing Messages"), enabled: true))
     entries.append(.notice(id: id.count, section: .savedMessages, text: ghostText("Удалённые собеседником сообщения остаются на этом устройстве с пометкой «удалено». История изменений открывается долгим нажатием на сообщение.", "Messages deleted by others stay on this device marked as deleted. Long-press a message to see its edit history.")))
 
@@ -816,6 +827,19 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
                     }
                     options.append(SGOneFromManyOption(title: i18n("Settings.Transcription.Backend.\(value.rawValue)", presentationData.strings.baseLanguageCode), isSelected: SGSimpleSettings.shared.transcriptionBackend == value.rawValue, action: {
                         setAction(value.rawValue)
+                    }))
+                }
+            case .deletedMarkStyle:
+                let isRuOption = presentationData.strings.baseLanguageCode == "ru" || presentationData.strings.baseLanguageCode == "uk" || presentationData.strings.baseLanguageCode == "be"
+                let values: [(String, String)] = [
+                    ("text", isRuOption ? "Текст «удалено»" : "\"deleted\" text"),
+                    ("icon", "🗑"),
+                    ("none", isRuOption ? "Без пометки" : "No mark")
+                ]
+                for (value, title) in values {
+                    options.append(SGOneFromManyOption(title: title, isSelected: SGSimpleSettings.shared.deletedMarkStyle == value, action: {
+                        SGSimpleSettings.shared.deletedMarkStyle = value
+                        simplePromise.set(true)
                     }))
                 }
             case .nyStyle:

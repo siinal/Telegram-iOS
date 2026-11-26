@@ -1,3 +1,4 @@
+import SGSimpleSettings
 import Foundation
 import TelegramCore
 import TelegramPresentationData
@@ -252,9 +253,16 @@ public func stringForMessageTimestampStatus(
     
     // MARK: Swiftgram saved deleted messages
     if message.attributes.contains(where: { $0 is SGDeletedMessageAttribute }) {
-        let lang = strings.baseLanguageCode
-        let deletedLabel = (lang == "ru" || lang == "uk" || lang == "be") ? "удалено" : "deleted"
-        dateText = "\(deletedLabel) \(dateText)"
+        switch SGSimpleSettings.shared.deletedMarkStyle {
+        case "none":
+            break
+        case "icon":
+            dateText = "🗑 " + dateText
+        default:
+            let lang = strings.baseLanguageCode
+            let deletedLabel = (lang == "ru" || lang == "uk" || lang == "be") ? "удалено" : "deleted"
+            dateText = deletedLabel + " " + dateText
+        }
     }
 
     if case .minimal = format {
