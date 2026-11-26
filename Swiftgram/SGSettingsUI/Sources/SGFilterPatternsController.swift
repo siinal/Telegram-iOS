@@ -41,6 +41,7 @@ private struct SGFilterPatternsView: View {
 
     @State private var newPattern: String = ""
     @State private var errorText: String?
+    @State private var sampleText: String = ""
     @State private var patterns: [String] {
         didSet {
             SGSimpleSettings.shared.filterPatterns = patterns
@@ -75,6 +76,20 @@ private struct SGFilterPatternsView: View {
                     Text(errorText)
                         .font(.footnote)
                         .foregroundColor(.red)
+                }
+            }
+
+            Section(header: Text(sgFilterText(lang, "ПРОВЕРКА", "TEST"))) {
+                TextField(sgFilterText(lang, "Пример текста сообщения", "Sample message text"), text: $sampleText)
+                    .autocorrectionDisabled(true)
+                if !sampleText.isEmpty {
+                    if let matched = sgFirstMatchingFilterPattern(sampleText, patterns: patterns) {
+                        Text(sgFilterText(lang, "Будет скрыто шаблоном: ", "Hidden by pattern: ") + matched)
+                            .foregroundColor(.red)
+                    } else {
+                        Text(sgFilterText(lang, "Не будет скрыто", "Not hidden"))
+                            .foregroundColor(.green)
+                    }
                 }
             }
 

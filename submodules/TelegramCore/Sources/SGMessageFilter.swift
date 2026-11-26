@@ -169,3 +169,14 @@ public func sgIsMessageFiltered(_ message: Message, accountPeerId: PeerId) -> Bo
     }
     return false
 }
+
+/// The first pattern that matches the text, for checking patterns in settings.
+public func sgFirstMatchingFilterPattern(_ text: String, patterns: [String]) -> String? {
+    let range = NSRange(location: 0, length: (text as NSString).length)
+    for pattern in patterns {
+        if let expression = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]), expression.firstMatch(in: text, options: [], range: range) != nil {
+            return pattern
+        }
+    }
+    return nil
+}
