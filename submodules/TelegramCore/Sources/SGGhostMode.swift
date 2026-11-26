@@ -77,3 +77,31 @@ func sgGhostScheduleIfNeeded(_ message: EnqueueMessage, accountPeerId: PeerId, p
         return updated
     }
 }
+
+// MARK: Chats where ghost mode still sends read receipts
+
+private let sgGhostReadExceptionCache = Atomic<(raw: [String], ids: Set<Int64>)?>(value: nil)
+
+public func sgGhostIsReadException(_ peerId: PeerId) -> Bool {
+    let raw = SGSimpleSettings.shared.ghostReadExceptionPeerIds
+    if raw.isEmpty {
+        return false
+    }
+    let ids = sgGhostReadExceptionCache.modify { current in
+        if let current, current.raw == raw {
+            return current
+        }
+        return (raw: raw, ids: Set(raw.compactMap { Int64($0) }))
+    }?.ids ?? []
+    return ids.contains(peerId.toInt64())
+}
+
+public func sgGhostSetReadException(_ peerId: PeerId, _ value: Bool) {
+    var raw = SGSimpleSettings.shared.ghostReadExceptionPeerIds
+    let key = String(peerId.toInt64())
+    raw.removeAll(where: { $0 == key })
+    if value {
+        raw.append(key)
+    }
+    SGSimpleSettings.shared.ghostReadExceptionPeerIds = raw
+}

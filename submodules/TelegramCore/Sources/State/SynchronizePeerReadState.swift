@@ -272,7 +272,7 @@ func sgGhostPushReadStateAfterSend(network: Network, postbox: Postbox, stateMana
 
 private func pushPeerReadState(network: Network, postbox: Postbox, stateManager: AccountStateManager, peerId: PeerId, readState: PeerReadState, sgForce: Bool = false) -> Signal<PeerReadState, PeerReadStateValidationError> {
     // MARK: Swiftgram ghost mode: the read stays local, the server is not told
-    if !sgForce && SGSimpleSettings.shared.ghostBlocksReadMessages {
+    if !sgForce && SGSimpleSettings.shared.ghostBlocksReadMessages && !sgGhostIsReadException(peerId) {
         return .single(readState)
     }
     if peerId.namespace == Namespaces.Peer.SecretChat {

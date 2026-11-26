@@ -107,6 +107,7 @@ enum SGContextMenuActionFactory {
     case messageShot(context: AccountContext, view: () -> UIView?)
     case deletedList(controllerInteraction: ChatControllerInteraction, context: AccountContext)
     case shadowBan(authorId: EnginePeer.Id, authorName: String)
+    case ghostReadException(context: AccountContext)
 }
 
 /// Draws a message bubble on the chat background colour, with a margin.
@@ -303,6 +304,26 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
         }, action: { _, f in
             f(.default)
             sgSetShadowBanned(authorId, !isBanned)
+        }))
+    case let .ghostReadException(context):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        let peerId = message.id.peerId
+        let isException = sgGhostIsReadException(peerId)
+        let text: String
+        if isException {
+            text = isRu ? "Призрак: не читать этот чат" : "Ghost: Don't Read This Chat"
+        } else {
+            text = isRu ? "Призрак: читать этот чат" : "Ghost: Read This Chat"
+        }
+        return .action(ContextMenuActionItem(text: text, icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: isException ? "Chat/Context Menu/EyeLocked" : "Chat/Context Menu/Eye"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            f(.default)
+            sgGhostSetReadException(peerId, !isException)
+            if !isException {
+                sgGhostMarkChatRead(account: context.account, peerId: peerId)
+            }
         }))
     case let .ghostMarkRead(context):
         let lang = chatPresentationInterfaceState.strings.baseLanguageCode

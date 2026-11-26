@@ -1607,7 +1607,10 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             actions.append(sgMakeContextMenuAction(.lyrics(controllerInteraction: controllerInteraction, context: context, title: musicInfo.title, performer: musicInfo.performer), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
         }
         if SGSimpleSettings.shared.ghostBlocksReadMessages && message.id.namespace == Namespaces.Message.Cloud {
-            sgActions.append(sgMakeContextMenuAction(.ghostMarkRead(context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+            if !sgGhostIsReadException(message.id.peerId) {
+                sgActions.append(sgMakeContextMenuAction(.ghostMarkRead(context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+            }
+            sgActions.append(sgMakeContextMenuAction(.ghostReadException(context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
         }
         if message.flags.contains(.Incoming), message.id.peerId.namespace != Namespaces.Peer.CloudUser, let author = message.author, author.id != context.account.peerId, author.id != message.id.peerId {
             let authorName = EnginePeer(author).compactDisplayTitle
