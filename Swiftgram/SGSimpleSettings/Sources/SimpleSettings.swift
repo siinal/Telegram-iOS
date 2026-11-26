@@ -217,6 +217,7 @@ public class SGSimpleSettings {
         case deletedMarkStyle
         case aiCustomPrompt
         case hiddenChatPeerIds
+        case hiddenMessageIds
     }
     
     public enum DownloadSpeedBoostValues: String, CaseIterable {
@@ -406,6 +407,7 @@ public class SGSimpleSettings {
         Keys.deletedMarkStyle.rawValue: "text",
         Keys.aiCustomPrompt.rawValue: "",
         Keys.hiddenChatPeerIds.rawValue: [],
+        Keys.hiddenMessageIds.rawValue: [],
     ]
     
     public static let groupDefaultValues: [String: Any] = [
@@ -808,6 +810,9 @@ public class SGSimpleSettings {
 
     @UserDefault(key: Keys.hiddenChatPeerIds.rawValue)
     public var hiddenChatPeerIds: [String]
+
+    @UserDefault(key: Keys.hiddenMessageIds.rawValue)
+    public var hiddenMessageIds: [String]
 }
 
 // MARK: Ghost mode

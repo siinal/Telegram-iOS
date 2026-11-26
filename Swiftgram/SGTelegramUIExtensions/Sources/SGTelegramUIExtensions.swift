@@ -113,6 +113,10 @@ enum SGContextMenuActionFactory {
     case copyIds(context: AccountContext)
     case exportChat(context: AccountContext)
     case hideChat(context: AccountContext)
+    case repeatMessage(context: AccountContext)
+    case hideMessage(context: AccountContext)
+    case addToFilter(context: AccountContext)
+    case messageDetails(controllerInteraction: ChatControllerInteraction, context: AccountContext)
     case clearDeleted(context: AccountContext)
 }
 
@@ -325,6 +329,131 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
         }, action: { _, f in
             f(.default)
             sgSetShadowBanned(authorId, !isBanned)
+        }))
+    case let .repeatMessage(context):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        return .action(ContextMenuActionItem(text: isRu ? "Повторить" : "Repeat", icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Resend"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            f(.default)
+            var attributes: [MessageAttribute] = []
+            for attribute in message.attributes {
+                if let attribute = attribute as? TextEntitiesMessageAttribute {
+                    attributes.append(attribute)
+                }
+            }
+            var mediaReference: AnyMediaReference?
+            for media in message.media {
+                if media is TelegramMediaImage || media is TelegramMediaFile {
+                    mediaReference = .message(message: MessageReference(message), media: media)
+                    break
+                }
+            }
+            if message.text.isEmpty && mediaReference == nil {
+                return
+            }
+            let enqueueMessage: EnqueueMessage = .message(text: message.text, attributes: attributes, inlineStickers: [:], mediaReference: mediaReference, threadId: message.threadId, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
+            let _ = enqueueMessages(account: context.account, peerId: message.id.peerId, messages: [enqueueMessage]).startStandalone()
+        }))
+    case let .hideMessage(context):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        return .action(ContextMenuActionItem(text: isRu ? "Скрыть сообщение" : "Hide Message", icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/EyeLocked"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            f(.default)
+            sgHideMessage(message.id)
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            context.sharedContext.presentGlobalController(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: isRu ? "Сообщение скрыто у тебя. Вернуть: Настройки → Swiftgram → Фильтры" : "Message hidden for you. Restore in Settings → Swiftgram → Filters", timeout: nil, customUndoText: nil), elevatedLayout: false, action: { _ in return false }), nil)
+        }))
+    case let .addToFilter(context):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        return .action(ContextMenuActionItem(text: isRu ? "Добавить в фильтр" : "Add to Filter", icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/TagFilter"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            f(.default)
+            guard let _ = sgAddFilterPattern(fromText: message.text) else {
+                return
+            }
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            context.sharedContext.presentGlobalController(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: isRu ? "Добавлено в фильтр. Такие сообщения будут скрыты." : "Added to filter. Such messages will be hidden.", timeout: nil, customUndoText: nil), elevatedLayout: false, action: { _ in return false }), nil)
+        }))
+    case let .messageDetails(controllerInteraction, context):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        let title = isRu ? "Подробности" : "Details"
+        return .action(ContextMenuActionItem(text: title, icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Info"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            f(.default)
+            let formatter = DateFormatter()
+            formatter.dateFormat = "dd.MM.yyyy HH:mm:ss"
+            func dateString(_ timestamp: Int32) -> String {
+                return formatter.string(from: Date(timeIntervalSince1970: Double(timestamp)))
+            }
+            var lines: [String] = []
+            lines.append((isRu ? "ID сообщения: " : "Message ID: ") + String(message.id.id))
+            lines.append((isRu ? "ID чата: " : "Chat ID: ") + String(message.id.peerId.id._internalGetInt64Value()))
+            if let author = message.author {
+                let authorName = EnginePeer(author).displayTitle(strings: chatPresentationInterfaceState.strings, displayOrder: chatPresentationInterfaceState.nameDisplayOrder)
+                let authorLabel: String = isRu ? "Автор: " : "Author: "
+                let authorId: String = String(author.id.id._internalGetInt64Value())
+                var authorLine: String = authorLabel
+                authorLine += authorName
+                authorLine += " ("
+                authorLine += authorId
+                authorLine += ")"
+                lines.append(authorLine)
+            }
+            lines.append((isRu ? "Отправлено: " : "Sent: ") + dateString(message.timestamp))
+            if let editedTime = message.editedTime {
+                lines.append((isRu ? "Изменено: " : "Edited: ") + dateString(editedTime))
+            }
+            if let deletedDate = message.sgDeletedDate {
+                lines.append((isRu ? "Удалено: " : "Deleted: ") + dateString(deletedDate))
+            }
+            if let forwardInfo = message.forwardInfo {
+                var forwardLine = isRu ? "Переслано от: " : "Forwarded from: "
+                if let source = forwardInfo.author ?? forwardInfo.source {
+                    forwardLine += EnginePeer(source).displayTitle(strings: chatPresentationInterfaceState.strings, displayOrder: chatPresentationInterfaceState.nameDisplayOrder)
+                } else if let signature = forwardInfo.authorSignature {
+                    forwardLine += signature
+                }
+                forwardLine += ", " + dateString(forwardInfo.date)
+                lines.append(forwardLine)
+            }
+            for attribute in message.attributes {
+                if let attribute = attribute as? ViewCountMessageAttribute {
+                    lines.append((isRu ? "Просмотры: " : "Views: ") + String(attribute.count))
+                }
+            }
+            for media in message.media {
+                if let file = media as? TelegramMediaFile {
+                    if let fileName = file.fileName {
+                        lines.append((isRu ? "Файл: " : "File: ") + fileName)
+                    }
+                    lines.append((isRu ? "Тип: " : "Type: ") + file.mimeType)
+                    if let size = file.size {
+                        lines.append((isRu ? "Размер: " : "Size: ") + ByteCountFormatter.string(fromByteCount: size, countStyle: .file))
+                    }
+                    if let dcId = (file.resource as? CloudDocumentMediaResource)?.datacenterId {
+                        lines.append("DC: " + String(dcId))
+                    }
+                } else if let image = media as? TelegramMediaImage, let largest = image.representations.last {
+                    let photoLabel: String = isRu ? "Фото: " : "Photo: "
+                let widthText: String = String(Int(largest.dimensions.width))
+                let heightText: String = String(Int(largest.dimensions.height))
+                lines.append(photoLabel + widthText + "×" + heightText)
+                }
+            }
+            let history = message.sgEditHistory
+            if !history.isEmpty {
+                lines.append((isRu ? "Версий в истории изменений: " : "Saved edit versions: ") + String(history.count))
+            }
+            let model = SGTextViewerModel(text: lines.joined(separator: "\n"), isLoading: false)
+            controllerInteraction.navigationController()?.pushViewController(sgTextViewerController(context: context, title: title, model: model))
         }))
     case let .hideChat(context):
         let lang = chatPresentationInterfaceState.strings.baseLanguageCode

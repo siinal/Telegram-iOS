@@ -119,6 +119,9 @@ public func sgSetShadowBanned(_ peerId: PeerId, _ value: Bool) {
 /// Whether an incoming message is hidden from the chat by the filters.
 public func sgIsMessageFiltered(_ message: Message, accountPeerId: PeerId) -> Bool {
     let settings = SGSimpleSettings.shared
+    if sgIsHiddenMessage(message.id) {
+        return true
+    }
     if settings.hideMemberServiceMessages {
         for media in message.media {
             if let action = media as? TelegramMediaAction {
@@ -215,4 +218,54 @@ public func sgSetHiddenChat(_ peerId: PeerId, _ value: Bool) {
 
 public func sgHiddenChatPeerIds() -> [PeerId] {
     return SGSimpleSettings.shared.hiddenChatPeerIds.compactMap { Int64($0) }.map { PeerId($0) }
+}
+
+// MARK: Swiftgram locally hidden messages
+
+private let sgHiddenMessagesCache = Atomic<(raw: [String], ids: Set<String>)?>(value: nil)
+
+private func sgHiddenMessageKey(_ id: MessageId) -> String {
+    return String(id.peerId.toInt64()) + ":" + String(id.namespace) + ":" + String(id.id)
+}
+
+public func sgIsHiddenMessage(_ id: MessageId) -> Bool {
+    let raw = SGSimpleSettings.shared.hiddenMessageIds
+    if raw.isEmpty {
+        return false
+    }
+    let ids = sgHiddenMessagesCache.modify { current in
+        if let current, current.raw == raw {
+            return current
+        }
+        return (raw: raw, ids: Set(raw))
+    }?.ids ?? []
+    return ids.contains(sgHiddenMessageKey(id))
+}
+
+public func sgHideMessage(_ id: MessageId) {
+    var raw = SGSimpleSettings.shared.hiddenMessageIds
+    let key = sgHiddenMessageKey(id)
+    if !raw.contains(key) {
+        raw.append(key)
+        SGSimpleSettings.shared.hiddenMessageIds = raw
+    }
+}
+
+/// Adds the message text as a literal filter pattern and turns the filters on.
+public func sgAddFilterPattern(fromText text: String) -> String? {
+    var trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.isEmpty {
+        return nil
+    }
+    if trimmed.count > 200 {
+        trimmed = String(trimmed.prefix(200))
+    }
+    let pattern = NSRegularExpression.escapedPattern(for: trimmed)
+    var patterns = SGSimpleSettings.shared.filterPatterns
+    if !patterns.contains(pattern) {
+        patterns.append(pattern)
+        SGSimpleSettings.shared.filterPatterns = patterns
+    }
+    SGSimpleSettings.shared.filterEnabled = true
+    return pattern
 }

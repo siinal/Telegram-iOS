@@ -1617,7 +1617,17 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             sgActions.append(sgMakeContextMenuAction(.shadowBan(authorId: author.id, authorName: authorName), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
         }
         if message.id.namespace == Namespaces.Message.Cloud {
+            sgActions.append(sgMakeContextMenuAction(.messageDetails(controllerInteraction: controllerInteraction, context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
             sgActions.append(sgMakeContextMenuAction(.copyIds(context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+            if chatPresentationInterfaceState.interfaceState.editMessage == nil, canSendMessagesToChat(chatPresentationInterfaceState) {
+                sgActions.append(sgMakeContextMenuAction(.repeatMessage(context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+            }
+            if message.flags.contains(.Incoming) {
+                sgActions.append(sgMakeContextMenuAction(.hideMessage(context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+                if !message.text.isEmpty {
+                    sgActions.append(sgMakeContextMenuAction(.addToFilter(context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+                }
+            }
         }
         if sgIsCalculation(message.text) {
             actions.append(sgMakeContextMenuAction(.calculate(controllerInteraction: controllerInteraction, context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
