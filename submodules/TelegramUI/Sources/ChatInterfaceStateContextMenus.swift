@@ -1608,6 +1608,11 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         if SGSimpleSettings.shared.ghostBlocksReadMessages && message.id.namespace == Namespaces.Message.Cloud {
             sgActions.append(sgMakeContextMenuAction(.ghostMarkRead(context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
         }
+        if let messageNode {
+            sgActions.append(sgMakeContextMenuAction(.messageShot(context: context, view: { [weak messageNode] in
+                return messageNode?.view
+            }), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+        }
         if sgIsAIServiceConfigured && !message.text.isEmpty {
             sgActions.append(sgMakeContextMenuAction(.askAI(controllerInteraction: controllerInteraction, context: context, translate: false), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
             sgActions.append(sgMakeContextMenuAction(.askAI(controllerInteraction: controllerInteraction, context: context, translate: true), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))

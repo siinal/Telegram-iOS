@@ -132,6 +132,7 @@ private enum SGBoolSetting: String {
     case streamerMode
     case hideSponsoredMessages
     case saveSelfDestructing
+    case ghostSendAsScheduled
 }
 
 private enum SGOneFromManySetting: String {
@@ -211,8 +212,9 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostDontSendUploadProgress, value: SGSimpleSettings.shared.ghostDontSendUploadProgress, text: ghostText("Не отправлять статус загрузки", "Don't Send Upload Status"), enabled: ghostOn))
     entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostSendOfflineAfterOnline, value: SGSimpleSettings.shared.ghostSendOfflineAfterOnline, text: ghostText("Уходить в оффлайн после отправки", "Go Offline After Sending"), enabled: ghostOn && SGSimpleSettings.shared.ghostDontSendOnline))
     entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostMarkReadAfterSend, value: SGSimpleSettings.shared.ghostMarkReadAfterSend, text: ghostText("Читать чат после отправки сообщения", "Mark Chat Read After Sending"), enabled: ghostOn && SGSimpleSettings.shared.ghostDontReadMessages))
+    entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostSendAsScheduled, value: SGSimpleSettings.shared.ghostSendAsScheduled, text: ghostText("Отправлять как отложенные", "Send as Scheduled"), enabled: ghostOn))
     entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostShowToggleInChatList, value: SGSimpleSettings.shared.ghostShowToggleInChatList, text: ghostText("Кнопка 👻 в списке чатов", "👻 Button in Chat List"), enabled: true))
-    entries.append(.notice(id: id.count, section: .ghost, text: ghostText("Отправка сообщения всё равно делает вас «в сети» — так работает сервер Telegram. Использование может нарушать правила Telegram.", "Sending a message still shows you online, this is how Telegram servers work. Using this may violate Telegram's Terms of Service.")))
+    entries.append(.notice(id: id.count, section: .ghost, text: ghostText("Отправка сообщения делает вас «в сети» — так работает сервер Telegram. «Отправлять как отложенные» обходит это: сообщение уходит через 15 секунд как отложенное. Использование может нарушать правила Telegram.", "Sending a message shows you online, this is how Telegram servers work. Send as Scheduled avoids it: messages go out 15 seconds later as scheduled ones. Using this may violate Telegram's Terms of Service.")))
 
     // MARK: Saved deleted and edited messages
     entries.append(.header(id: id.count, section: .savedMessages, text: ghostText("СОХРАНЕНИЕ СООБЩЕНИЙ", "MESSAGE SAVING"), badge: nil))
@@ -531,6 +533,8 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
             SGSimpleSettings.shared.hideSponsoredMessages = value
         case .saveSelfDestructing:
             SGSimpleSettings.shared.saveSelfDestructing = value
+        case .ghostSendAsScheduled:
+            SGSimpleSettings.shared.ghostSendAsScheduled = value
         case .showProfileId:
             SGSimpleSettings.shared.showProfileId = value
         case .warnOnStoriesOpen:

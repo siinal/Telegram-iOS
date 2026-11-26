@@ -57,3 +57,23 @@ func sgGhostAfterOutgoingMessage(account: Account, peerId: PeerId) {
 public func sgGhostMarkChatRead(account: Account, peerId: PeerId) {
     let _ = sgGhostPushReadStateAfterSend(network: account.network, postbox: account.postbox, stateManager: account.stateManager, peerId: peerId).startStandalone()
 }
+
+/// In ghost mode, sends messages as scheduled a few seconds ahead, so sending does not show the account online.
+func sgGhostScheduleIfNeeded(_ message: EnqueueMessage, accountPeerId: PeerId, peerId: PeerId) -> EnqueueMessage {
+    let settings = SGSimpleSettings.shared
+    guard settings.ghostMode && settings.ghostSendAsScheduled else {
+        return message
+    }
+    if peerId == accountPeerId || peerId.namespace == Namespaces.Peer.SecretChat {
+        return message
+    }
+    let scheduleTime = Int32(Date().timeIntervalSince1970) + 15
+    return message.withUpdatedAttributes { current in
+        if current.contains(where: { $0 is OutgoingScheduleInfoMessageAttribute }) {
+            return current
+        }
+        var updated = current
+        updated.append(OutgoingScheduleInfoMessageAttribute(scheduleTime: scheduleTime, repeatPeriod: nil))
+        return updated
+    }
+}

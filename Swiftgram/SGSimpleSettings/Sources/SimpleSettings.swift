@@ -207,6 +207,7 @@ public class SGSimpleSettings {
         case aiModel
         case hideSponsoredMessages
         case saveSelfDestructing
+        case ghostSendAsScheduled
     }
     
     public enum DownloadSpeedBoostValues: String, CaseIterable {
@@ -386,6 +387,7 @@ public class SGSimpleSettings {
         Keys.aiModel.rawValue: "",
         Keys.hideSponsoredMessages.rawValue: true,
         Keys.saveSelfDestructing.rawValue: false,
+        Keys.ghostSendAsScheduled.rawValue: false,
     ]
     
     public static let groupDefaultValues: [String: Any] = [
@@ -757,6 +759,9 @@ public class SGSimpleSettings {
 
     @UserDefault(key: Keys.saveSelfDestructing.rawValue)
     public var saveSelfDestructing: Bool
+
+    @UserDefault(key: Keys.ghostSendAsScheduled.rawValue)
+    public var ghostSendAsScheduled: Bool
 }
 
 // MARK: Ghost mode

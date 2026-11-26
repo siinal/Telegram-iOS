@@ -103,6 +103,29 @@ enum SGContextMenuActionFactory {
     case lyrics(controllerInteraction: ChatControllerInteraction, context: AccountContext, title: String, performer: String?)
     case askAI(controllerInteraction: ChatControllerInteraction, context: AccountContext, translate: Bool)
     case ghostMarkRead(context: AccountContext)
+    case messageShot(context: AccountContext, view: () -> UIView?)
+}
+
+/// Draws a message bubble on the chat background colour, with a margin.
+func sgRenderMessageShot(view: UIView, backgroundColor: UIColor) -> UIImage? {
+    let size = view.bounds.size
+    if size.width < 1.0 || size.height < 1.0 {
+        return nil
+    }
+    let inset: CGFloat = 16.0
+    let format = UIGraphicsImageRendererFormat()
+    format.scale = max(UIScreen.main.scale, 2.0)
+    format.opaque = true
+    let renderer = UIGraphicsImageRenderer(size: CGSize(width: size.width + inset * 2.0, height: size.height + inset * 2.0), format: format)
+    return renderer.image { rendererContext in
+        backgroundColor.setFill()
+        rendererContext.fill(CGRect(origin: .zero, size: CGSize(width: size.width + inset * 2.0, height: size.height + inset * 2.0)))
+        let drawn = view.drawHierarchy(in: CGRect(origin: CGPoint(x: inset, y: inset), size: size), afterScreenUpdates: false)
+        if !drawn {
+            rendererContext.cgContext.translateBy(x: inset, y: inset)
+            view.layer.render(in: rendererContext.cgContext)
+        }
+    }
 }
 
 /// Title and performer of a music file in the message, for looking up its lyrics.
@@ -163,9 +186,8 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
             let currentLabel = isRu ? "сейчас" : "current"
             let currentDateString = formatter.string(from: Date(timeIntervalSince1970: Double(currentDate)))
             parts.append(currentDateString + " (" + currentLabel + ")\n" + message.text)
-            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            let alertController = textAlertController(context: context, title: title, text: parts.joined(separator: "\n\n"), actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})])
-            controllerInteraction.presentController(alertController, nil)
+            let model = SGTextViewerModel(text: parts.reversed().joined(separator: "\n\n— — —\n\n"), isLoading: false)
+            controllerInteraction.navigationController()?.pushViewController(sgTextViewerController(context: context, title: title, model: model))
         }))
     case let .lyrics(controllerInteraction, context, title, performer):
         let lang = chatPresentationInterfaceState.strings.baseLanguageCode
@@ -207,6 +229,23 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
                     model.finish(text: (isRu ? "Ошибка: " : "Error: ") + error.localizedDescription)
                 }
             })
+        }))
+    case let .messageShot(context, view):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        return .action(ContextMenuActionItem(text: isRu ? "Скриншот сообщения" : "Message Shot", icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Share"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            let backgroundColor = chatPresentationInterfaceState.theme.list.plainBackgroundColor
+            let image = view().flatMap { sgRenderMessageShot(view: $0, backgroundColor: backgroundColor) }
+            f(.default)
+            guard let image else {
+                return
+            }
+            let activityController = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+            Queue.mainQueue().after(0.3) {
+                context.sharedContext.mainWindow?.presentNative(activityController)
+            }
         }))
     case let .ghostMarkRead(context):
         let lang = chatPresentationInterfaceState.strings.baseLanguageCode
