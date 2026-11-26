@@ -89,6 +89,46 @@ jobs:
           print({k: v for k, v in cfg.items() if k not in ("api_id", "api_hash")})
           EOF
 
+      - name: Refresh expired fake provisioning profiles
+        # Профили в build-system/fake-codesigning имеют ExpirationDate в прошлом,
+        # Bazel из-за этого отказывается собирать. Продлеваем дату и переподписываем
+        # тем же самоподписанным сертификатом (он действителен до 2030 года).
+        run: |
+          cd /Users/Shared/telegram-ios
+          python3 - <<'EOF'
+          import os, sys, tempfile, subprocess
+          sys.path.insert(0, 'build-system/Make')
+          import GenerateProfiles as G
+
+          profiles = 'build-system/fake-codesigning/profiles'
+          p12 = 'build-system/fake-codesigning/certs/SelfSigned.p12'
+          identity = G.get_signing_identity_from_p12(p12, '')
+          print('Signing identity:', identity)
+          keychain = G.setup_temp_keychain(p12, '')
+          try:
+              for name in sorted(os.listdir(profiles)):
+                  if not name.endswith('.mobileprovision'):
+                      continue
+                  path = os.path.join(profiles, name)
+                  plist = subprocess.run(['security', 'cms', '-D', '-i', path],
+                                         check=True, capture_output=True).stdout
+                  tmp = tempfile.mktemp(suffix='.plist')
+                  open(tmp, 'wb').write(plist)
+                  subprocess.run(['plutil', '-replace', 'ExpirationDate', '-date',
+                                  '2030-01-01T00:00:00Z', tmp], check=True)
+                  subprocess.run(['plutil', '-remove', 'DER-Encoded-Profile', tmp])
+                  subprocess.run(['security', 'cms', '-S', '-k', keychain, '-N', identity,
+                                  '-i', tmp, '-o', path], check=True)
+                  os.unlink(tmp)
+                  out = subprocess.run(['security', 'cms', '-D', '-i', path],
+                                       check=True, capture_output=True).stdout
+                  exp = subprocess.run(['plutil', '-extract', 'ExpirationDate', 'raw', '-'],
+                                       input=out, capture_output=True).stdout.decode().strip()
+                  print(f'{name}: ExpirationDate -> {exp}')
+          finally:
+              G.cleanup_temp_keychain(keychain)
+          EOF
+
       - name: Build
         run: |
           set -x
