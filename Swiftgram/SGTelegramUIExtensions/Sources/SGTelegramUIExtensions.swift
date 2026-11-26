@@ -109,6 +109,7 @@ enum SGContextMenuActionFactory {
     case shadowBan(authorId: EnginePeer.Id, authorName: String)
     case ghostReadException(context: AccountContext)
     case calculate(controllerInteraction: ChatControllerInteraction, context: AccountContext)
+    case copyIds(context: AccountContext)
 }
 
 /// Draws a message bubble on the chat background colour, with a margin.
@@ -305,6 +306,23 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
         }, action: { _, f in
             f(.default)
             sgSetShadowBanned(authorId, !isBanned)
+        }))
+    case let .copyIds(context):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        return .action(ContextMenuActionItem(text: isRu ? "Копировать ID" : "Copy IDs", icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            f(.default)
+            var lines: [String] = []
+            lines.append((isRu ? "Сообщение: " : "Message: ") + String(message.id.id))
+            lines.append((isRu ? "Чат: " : "Chat: ") + String(message.id.peerId.id._internalGetInt64Value()))
+            if let author = message.author {
+                lines.append((isRu ? "Автор: " : "Author: ") + String(author.id.id._internalGetInt64Value()))
+            }
+            UIPasteboard.general.string = lines.joined(separator: "\n")
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            context.sharedContext.presentGlobalController(UndoOverlayController(presentationData: presentationData, content: .copy(text: isRu ? "ID скопированы" : "IDs copied"), elevatedLayout: false, action: { _ in return false }), nil)
         }))
     case let .calculate(controllerInteraction, context):
         let lang = chatPresentationInterfaceState.strings.baseLanguageCode
