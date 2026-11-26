@@ -239,3 +239,194 @@ public func sgAIServiceController(context: AccountContext) -> ViewController {
         SGAIServiceSettingsView()
     }
 }
+
+// MARK: Calculator
+
+private struct SGExpressionParser {
+    let chars: [Character]
+    var index: Int = 0
+    var depth: Int = 0
+
+    init(chars: [Character]) {
+        self.chars = chars
+    }
+
+    func peek() -> Character? {
+        return self.index < self.chars.count ? self.chars[self.index] : nil
+    }
+
+    mutating func parseNumber() -> Double? {
+        let start = self.index
+        while let ch = self.peek(), ch.isNumber || ch == "." {
+            self.index += 1
+        }
+        if start == self.index {
+            return nil
+        }
+        return Double(String(self.chars[start ..< self.index]))
+    }
+
+    mutating func parsePrimary() -> Double? {
+        guard let ch = self.peek() else {
+            return nil
+        }
+        if ch == "-" {
+            self.index += 1
+            return self.parsePrimary().map { -$0 }
+        }
+        if ch == "+" {
+            self.index += 1
+            return self.parsePrimary()
+        }
+        if ch == "(" {
+            self.index += 1
+            self.depth += 1
+            if self.depth > 50 {
+                return nil
+            }
+            let value = self.parseSum()
+            self.depth -= 1
+            guard self.peek() == ")" else {
+                return nil
+            }
+            self.index += 1
+            return value
+        }
+        return self.parseNumber()
+    }
+
+    mutating func parsePower() -> Double? {
+        guard let base = self.parsePrimary() else {
+            return nil
+        }
+        if self.peek() == "^" {
+            self.index += 1
+            guard let exponent = self.parsePower() else {
+                return nil
+            }
+            return pow(base, exponent)
+        }
+        return base
+    }
+
+    mutating func parseProduct() -> Double? {
+        guard var value = self.parsePower() else {
+            return nil
+        }
+        while let ch = self.peek(), ch == "*" || ch == "/" || ch == "%" {
+            self.index += 1
+            guard let rhs = self.parsePower() else {
+                return nil
+            }
+            if ch == "*" {
+                value *= rhs
+            } else if ch == "/" {
+                value /= rhs
+            } else {
+                value = value.truncatingRemainder(dividingBy: rhs)
+            }
+        }
+        return value
+    }
+
+    mutating func parseSum() -> Double? {
+        guard var value = self.parseProduct() else {
+            return nil
+        }
+        while let ch = self.peek(), ch == "+" || ch == "-" {
+            self.index += 1
+            guard let rhs = self.parseProduct() else {
+                return nil
+            }
+            value = ch == "+" ? value + rhs : value - rhs
+        }
+        return value
+    }
+}
+
+/// Evaluates + - * / % ^ and parentheses with a recursive-descent parser. Returns nil for anything else.
+public func sgEvaluateExpression(_ input: String) -> Double? {
+    var chars: [Character] = []
+    for ch in input {
+        switch ch {
+        case " ", "\t", "\n", "\r":
+            continue
+        case "×", "x", "X":
+            chars.append("*")
+        case "÷", ":":
+            chars.append("/")
+        case ",":
+            chars.append(".")
+        case "−", "–":
+            chars.append("-")
+        default:
+            chars.append(ch)
+        }
+    }
+    if chars.isEmpty || chars.count > 500 {
+        return nil
+    }
+    var parser = SGExpressionParser(chars: chars)
+    guard let result = parser.parseSum(), parser.index == chars.count, result.isFinite else {
+        return nil
+    }
+    return result
+}
+
+/// Whether the text is a calculation worth offering: it has an operator and evaluates.
+public func sgIsCalculation(_ text: String) -> Bool {
+    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.count < 3 || trimmed.count > 200 {
+        return false
+    }
+    guard trimmed.dropFirst().contains(where: { "+-*/×÷^%".contains($0) }) else {
+        return false
+    }
+    return sgEvaluateExpression(trimmed) != nil
+}
+
+public func sgFormatCalculation(_ value: Double) -> String {
+    let formatter = NumberFormatter()
+    formatter.numberStyle = .decimal
+    formatter.maximumFractionDigits = 10
+    formatter.usesGroupingSeparator = true
+    return formatter.string(from: NSNumber(value: value)) ?? String(value)
+}
+
+private struct SGCalculatorView: View {
+    @Environment(\.lang) var lang: String
+    @State private var expression: String = ""
+
+    var body: some View {
+        List {
+            Section(footer: Text(sgToolsText(lang, "Поддерживаются + − × ÷ % ^ и скобки.", "Supports + − × ÷ % ^ and parentheses."))) {
+                TextField("12 * (3 + 4)", text: $expression)
+                    .keyboardType(.numbersAndPunctuation)
+                    .autocorrectionDisabled(true)
+                    .font(.system(.title3, design: .monospaced))
+            }
+            Section(header: Text(sgToolsText(lang, "РЕЗУЛЬТАТ", "RESULT"))) {
+                if let value = sgEvaluateExpression(expression) {
+                    Text(sgFormatCalculation(value))
+                        .font(.system(.title, design: .monospaced))
+                        .textSelection(.enabled)
+                } else {
+                    Text(expression.isEmpty ? "—" : sgToolsText(lang, "Неверное выражение", "Invalid expression"))
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .sgNavigationTitle(sgToolsText(lang, "Калькулятор", "Calculator"))
+    }
+}
+
+public func sgCalculatorController(context: AccountContext) -> ViewController {
+    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+    return SGSwiftUIController(
+        title: sgToolsText(presentationData.strings.baseLanguageCode, "Калькулятор", "Calculator"),
+        presentationData: presentationData,
+        presentationDataSignal: context.sharedContext.presentationData
+    ) {
+        SGCalculatorView()
+    }
+}

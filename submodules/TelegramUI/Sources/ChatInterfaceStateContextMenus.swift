@@ -1616,6 +1616,9 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             let authorName = EnginePeer(author).compactDisplayTitle
             sgActions.append(sgMakeContextMenuAction(.shadowBan(authorId: author.id, authorName: authorName), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
         }
+        if sgIsCalculation(message.text) {
+            actions.append(sgMakeContextMenuAction(.calculate(controllerInteraction: controllerInteraction, context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+        }
         if SGSimpleSettings.shared.saveDeletedMessages {
             sgActions.append(sgMakeContextMenuAction(.deletedList(controllerInteraction: controllerInteraction, context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
         }

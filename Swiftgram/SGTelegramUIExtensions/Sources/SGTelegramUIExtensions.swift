@@ -108,6 +108,7 @@ enum SGContextMenuActionFactory {
     case deletedList(controllerInteraction: ChatControllerInteraction, context: AccountContext)
     case shadowBan(authorId: EnginePeer.Id, authorName: String)
     case ghostReadException(context: AccountContext)
+    case calculate(controllerInteraction: ChatControllerInteraction, context: AccountContext)
 }
 
 /// Draws a message bubble on the chat background colour, with a margin.
@@ -304,6 +305,26 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
         }, action: { _, f in
             f(.default)
             sgSetShadowBanned(authorId, !isBanned)
+        }))
+    case let .calculate(controllerInteraction, context):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        return .action(ContextMenuActionItem(text: isRu ? "Посчитать" : "Calculate", icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Statistics"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            f(.default)
+            let expression = message.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let value = sgEvaluateExpression(expression) else {
+                return
+            }
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            let resultText = sgFormatCalculation(value)
+            controllerInteraction.presentController(textAlertController(context: context, title: resultText, text: expression + " =" + "\n" + resultText, actions: [
+                TextAlertAction(type: .genericAction, title: presentationData.strings.Conversation_ContextMenuCopy, action: {
+                    UIPasteboard.general.string = resultText
+                }),
+                TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})
+            ]), nil)
         }))
     case let .ghostReadException(context):
         let lang = chatPresentationInterfaceState.strings.baseLanguageCode
