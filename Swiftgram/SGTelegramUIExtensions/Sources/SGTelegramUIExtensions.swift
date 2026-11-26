@@ -110,6 +110,8 @@ enum SGContextMenuActionFactory {
     case ghostReadException(context: AccountContext)
     case calculate(controllerInteraction: ChatControllerInteraction, context: AccountContext)
     case copyIds(context: AccountContext)
+    case exportChat(context: AccountContext)
+    case clearDeleted(context: AccountContext)
 }
 
 /// Draws a message bubble on the chat background colour, with a margin.
@@ -309,6 +311,87 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
         }, action: { _, f in
             f(.default)
             sgSetShadowBanned(authorId, !isBanned)
+        }))
+    case let .exportChat(context):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        let peerId = message.id.peerId
+        let strings = chatPresentationInterfaceState.strings
+        let nameDisplayOrder = chatPresentationInterfaceState.nameDisplayOrder
+        return .action(ContextMenuActionItem(text: isRu ? "Экспорт чата в TXT" : "Export Chat as TXT", icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/File"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            f(.default)
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            context.sharedContext.presentGlobalController(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: isRu ? "Готовлю файл…" : "Preparing file…", timeout: 2.0, customUndoText: nil), elevatedLayout: false, action: { _ in return false }), nil)
+            let formatter = DateFormatter()
+            formatter.dateFormat = "dd.MM.yyyy HH:mm"
+            let _ = (context.account.postbox.transaction { transaction -> String in
+                var lines: [String] = []
+                var count = 0
+                transaction.withAllMessages(peerId: peerId, reversed: false, { item in
+                    if count >= 50000 {
+                        return false
+                    }
+                    count += 1
+                    let author = item.author.flatMap { EnginePeer($0).displayTitle(strings: strings, displayOrder: nameDisplayOrder) } ?? ""
+                    var body = item.text
+                    if body.isEmpty {
+                        if item.media.contains(where: { $0 is TelegramMediaAction }) {
+                            body = isRu ? "[служебное сообщение]" : "[service message]"
+                        } else if !item.media.isEmpty {
+                            body = isRu ? "[медиа]" : "[media]"
+                        }
+                    } else if !item.media.isEmpty {
+                        body = (isRu ? "[медиа] " : "[media] ") + body
+                    }
+                    var line = "[" + formatter.string(from: Date(timeIntervalSince1970: Double(item.timestamp))) + "] " + author + ": " + body
+                    if item.sgDeletedDate != nil {
+                        line += isRu ? " (удалено)" : " (deleted)"
+                    }
+                    lines.append(line)
+                    return true
+                })
+                return lines.joined(separator: "\n")
+            }
+            |> deliverOnMainQueue).start(next: { text in
+                let url = FileManager.default.temporaryDirectory.appendingPathComponent("chat-" + String(peerId.id._internalGetInt64Value()) + ".txt")
+                do {
+                    try text.write(to: url, atomically: true, encoding: .utf8)
+                } catch {
+                    return
+                }
+                let activityController = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                context.sharedContext.mainWindow?.presentNative(activityController)
+            })
+        }))
+    case let .clearDeleted(context):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        let peerId = message.id.peerId
+        return .action(ContextMenuActionItem(text: isRu ? "Стереть сохранённые удалённые" : "Erase Saved Deleted", textColor: .destructive, icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Delete"), color: theme.actionSheet.destructiveActionTextColor)
+        }, action: { _, f in
+            f(.default)
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            let mediaBox = context.account.postbox.mediaBox
+            context.sharedContext.presentGlobalController(textAlertController(context: context, title: nil, text: isRu ? "Стереть с устройства все сохранённые удалённые сообщения этого чата? Это нельзя отменить." : "Erase all saved deleted messages of this chat from this device? This cannot be undone.", actions: [
+                TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}),
+                TextAlertAction(type: .destructiveAction, title: isRu ? "Стереть" : "Erase", action: {
+                    let _ = context.account.postbox.transaction({ transaction -> Void in
+                        var ids: [MessageId] = []
+                        transaction.withAllMessages(peerId: peerId, reversed: true, { item in
+                            if item.sgDeletedDate != nil {
+                                ids.append(item.id)
+                            }
+                            return true
+                        })
+                        if !ids.isEmpty {
+                            _internal_deleteMessages(transaction: transaction, mediaBox: mediaBox, ids: ids)
+                        }
+                    }).start()
+                })
+            ]), nil)
         }))
     case let .copyIds(context):
         let lang = chatPresentationInterfaceState.strings.baseLanguageCode

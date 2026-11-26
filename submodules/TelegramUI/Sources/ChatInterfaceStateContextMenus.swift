@@ -1624,6 +1624,10 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         }
         if SGSimpleSettings.shared.saveDeletedMessages {
             sgActions.append(sgMakeContextMenuAction(.deletedList(controllerInteraction: controllerInteraction, context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+            sgActions.append(sgMakeContextMenuAction(.clearDeleted(context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+        }
+        if message.id.namespace == Namespaces.Message.Cloud {
+            sgActions.append(sgMakeContextMenuAction(.exportChat(context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
         }
         if let messageNode {
             sgActions.append(sgMakeContextMenuAction(.messageShot(context: context, view: { [weak messageNode] in
