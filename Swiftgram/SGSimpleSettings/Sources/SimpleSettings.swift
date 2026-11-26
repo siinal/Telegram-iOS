@@ -222,6 +222,7 @@ public class SGSimpleSettings {
         case semiTransparentDeletedMessages
         case disableOpenLinkWarning
         case hideSimilarChannels
+        case saveExcludedPeerIds
     }
     
     public enum DownloadSpeedBoostValues: String, CaseIterable {
@@ -416,6 +417,7 @@ public class SGSimpleSettings {
         Keys.semiTransparentDeletedMessages.rawValue: true,
         Keys.disableOpenLinkWarning.rawValue: false,
         Keys.hideSimilarChannels.rawValue: false,
+        Keys.saveExcludedPeerIds.rawValue: [],
     ]
     
     public static let groupDefaultValues: [String: Any] = [
@@ -834,6 +836,9 @@ public class SGSimpleSettings {
 
     @UserDefault(key: Keys.hideSimilarChannels.rawValue)
     public var hideSimilarChannels: Bool
+
+    @UserDefault(key: Keys.saveExcludedPeerIds.rawValue)
+    public var saveExcludedPeerIds: [String]
 }
 
 // MARK: Ghost mode

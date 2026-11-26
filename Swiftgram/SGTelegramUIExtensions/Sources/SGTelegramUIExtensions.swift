@@ -113,6 +113,7 @@ enum SGContextMenuActionFactory {
     case copyIds(context: AccountContext)
     case exportChat(context: AccountContext)
     case hideChat(context: AccountContext)
+    case savingException
     case repeatMessage(context: AccountContext)
     case hideMessage(context: AccountContext)
     case addToFilter(context: AccountContext)
@@ -454,6 +455,23 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
             }
             let model = SGTextViewerModel(text: lines.joined(separator: "\n"), isLoading: false)
             controllerInteraction.navigationController()?.pushViewController(sgTextViewerController(context: context, title: title, model: model))
+        }))
+    case .savingException:
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        let peerId = message.id.peerId
+        let isExcluded = sgIsSavingExcluded(peerId)
+        let actionTitle: String
+        if isExcluded {
+            actionTitle = isRu ? "Сохранять удалённые в этом чате" : "Save Deleted in This Chat"
+        } else {
+            actionTitle = isRu ? "Не сохранять удалённые в этом чате" : "Don't Save Deleted in This Chat"
+        }
+        return .action(ContextMenuActionItem(text: actionTitle, icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: isExcluded ? "Chat/Context Menu/Save" : "Chat/Context Menu/Clear"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            f(.default)
+            sgSetSavingExcluded(peerId, !isExcluded)
         }))
     case let .hideChat(context):
         let lang = chatPresentationInterfaceState.strings.baseLanguageCode

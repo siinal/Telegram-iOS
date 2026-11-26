@@ -88,6 +88,9 @@ private func sgShouldKeepDeletedMessage(transaction: Transaction, message: Messa
     if message.id.namespace != Namespaces.Message.Cloud {
         return false
     }
+    if sgIsSavingExcluded(message.id.peerId) {
+        return false
+    }
     if let user = transaction.getPeer(message.id.peerId) as? TelegramUser, user.botInfo != nil {
         return SGSimpleSettings.shared.saveDeletedForBots
     }
@@ -143,7 +146,7 @@ func sgKeepDeletedMessagesWithGlobalIds(transaction: Transaction, ids: [Int32]) 
 
 /// Adds the previous text of an edited message to its edit history.
 func sgAddEditHistory(previous previousMessage: Message, updated message: StoreMessage) -> StoreMessage {
-    guard SGSimpleSettings.shared.saveEditHistory else {
+    guard SGSimpleSettings.shared.saveEditHistory, !sgIsSavingExcluded(previousMessage.id.peerId) else {
         return message
     }
     if previousMessage.text == message.text || previousMessage.text.isEmpty {
@@ -203,4 +206,24 @@ public func sgCollectDeletedMessages(account: Account, maxChats: Int = 300, maxM
         result.sort(by: { $0.deletedDate > $1.deletedDate })
         return result
     }
+}
+
+// MARK: Chats where deleted and edited messages are not saved
+
+public func sgIsSavingExcluded(_ peerId: PeerId) -> Bool {
+    let raw = SGSimpleSettings.shared.saveExcludedPeerIds
+    if raw.isEmpty {
+        return false
+    }
+    return raw.contains(String(peerId.toInt64()))
+}
+
+public func sgSetSavingExcluded(_ peerId: PeerId, _ value: Bool) {
+    var raw = SGSimpleSettings.shared.saveExcludedPeerIds
+    let key = String(peerId.toInt64())
+    raw.removeAll(where: { $0 == key })
+    if value {
+        raw.append(key)
+    }
+    SGSimpleSettings.shared.saveExcludedPeerIds = raw
 }
