@@ -131,6 +131,7 @@ private enum SGBoolSetting: String {
     case removeLinkTracking
     case streamerMode
     case hideSponsoredMessages
+    case saveSelfDestructing
 }
 
 private enum SGOneFromManySetting: String {
@@ -218,6 +219,7 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.toggle(id: id.count, section: .savedMessages, settingName: .saveDeletedMessages, value: SGSimpleSettings.shared.saveDeletedMessages, text: ghostText("Сохранять удалённые сообщения", "Save Deleted Messages"), enabled: true))
     entries.append(.toggle(id: id.count, section: .savedMessages, settingName: .saveEditHistory, value: SGSimpleSettings.shared.saveEditHistory, text: ghostText("Сохранять историю изменений", "Save Edit History"), enabled: true))
     entries.append(.toggle(id: id.count, section: .savedMessages, settingName: .saveDeletedForBots, value: SGSimpleSettings.shared.saveDeletedForBots, text: ghostText("Сохранять в чатах с ботами", "Save in Bot Chats"), enabled: SGSimpleSettings.shared.saveDeletedMessages))
+    entries.append(.toggle(id: id.count, section: .savedMessages, settingName: .saveSelfDestructing, value: SGSimpleSettings.shared.saveSelfDestructing, text: ghostText("Не удалять исчезающие сообщения", "Keep Self-Destructing Messages"), enabled: true))
     entries.append(.notice(id: id.count, section: .savedMessages, text: ghostText("Удалённые собеседником сообщения остаются на этом устройстве с пометкой «удалено». История изменений открывается долгим нажатием на сообщение.", "Messages deleted by others stay on this device marked as deleted. Long-press a message to see its edit history.")))
 
     // MARK: Message filters
@@ -527,6 +529,8 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
             askForRestart?()
         case .hideSponsoredMessages:
             SGSimpleSettings.shared.hideSponsoredMessages = value
+        case .saveSelfDestructing:
+            SGSimpleSettings.shared.saveSelfDestructing = value
         case .showProfileId:
             SGSimpleSettings.shared.showProfileId = value
         case .warnOnStoriesOpen:

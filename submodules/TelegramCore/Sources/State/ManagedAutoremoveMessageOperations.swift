@@ -3,6 +3,7 @@ import Postbox
 import SwiftSignalKit
 internal import TelegramApi
 import MtProtoKit
+import SGSimpleSettings
 
 private typealias SignalKitTimer = SwiftSignalKit.Timer
 
@@ -82,6 +83,18 @@ func managedAutoremoveMessageOperations(network: Network, postbox: Postbox, isRe
                     Logger.shared.log("Autoremove", "Performing autoremove for \(entry.messageId), isRemove: \(isRemove)")
 
                     if let message = transaction.getMessage(entry.messageId) {
+                        // MARK: Swiftgram keep self-destructing messages in cloud chats
+                        if message.id.peerId.namespace != Namespaces.Peer.SecretChat && SGSimpleSettings.shared.saveSelfDestructing {
+                            if isRemove {
+                                let remaining = sgKeepDeletedMessages(transaction: transaction, ids: [entry.messageId])
+                                if !remaining.isEmpty {
+                                    _internal_deleteMessages(transaction: transaction, mediaBox: postbox.mediaBox, ids: remaining)
+                                    return
+                                }
+                            }
+                            transaction.clearTimestampBasedAttribute(id: entry.messageId, tag: tag)
+                            return
+                        }
                         if message.id.peerId.namespace == Namespaces.Peer.SecretChat || isRemove {
                             _internal_deleteMessages(transaction: transaction, mediaBox: postbox.mediaBox, ids: [entry.messageId])
                         } else {
