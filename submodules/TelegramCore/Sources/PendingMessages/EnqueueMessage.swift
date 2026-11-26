@@ -799,6 +799,8 @@ public func enqueueMessages(account: Account, peerId: PeerId, messages: [Enqueue
             for messageId in ephemeralMessageIds {
                 let _ = _internal_sendEphemeralOutgoingMessage(account: account, messageId: messageId).startStandalone()
             }
+            // MARK: Swiftgram ghost mode
+            sgGhostAfterOutgoingMessage(account: account, peerId: peerId)
             return resultIds
         }
     }

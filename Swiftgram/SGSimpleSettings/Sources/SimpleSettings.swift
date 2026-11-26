@@ -184,6 +184,15 @@ public class SGSimpleSettings {
         case videoControlsInFooter
         case combinedMediaViewer
         case hideAccountInNotifications
+        case ghostMode
+        case ghostDontReadMessages
+        case ghostDontReadStories
+        case ghostDontSendOnline
+        case ghostDontSendTyping
+        case ghostDontSendUploadProgress
+        case ghostSendOfflineAfterOnline
+        case ghostMarkReadAfterSend
+        case ghostShowToggleInChatList
     }
     
     public enum DownloadSpeedBoostValues: String, CaseIterable {
@@ -340,6 +349,15 @@ public class SGSimpleSettings {
         Keys.sendWithReturnKey.rawValue: false,
         Keys.videoControlsInFooter.rawValue: false,
         Keys.combinedMediaViewer.rawValue: false,
+        Keys.ghostMode.rawValue: false,
+        Keys.ghostDontReadMessages.rawValue: true,
+        Keys.ghostDontReadStories.rawValue: true,
+        Keys.ghostDontSendOnline.rawValue: true,
+        Keys.ghostDontSendTyping.rawValue: true,
+        Keys.ghostDontSendUploadProgress.rawValue: true,
+        Keys.ghostSendOfflineAfterOnline.rawValue: true,
+        Keys.ghostMarkReadAfterSend.rawValue: true,
+        Keys.ghostShowToggleInChatList.rawValue: true,
     ]
     
     public static let groupDefaultValues: [String: Any] = [
@@ -642,6 +660,64 @@ public class SGSimpleSettings {
 
     @UserDefault(key: Keys.hideAccountInNotifications.rawValue, userDefaults: UserDefaults(suiteName: APP_GROUP_IDENTIFIER) ?? .standard)
     public var hideAccountInNotifications: Bool
+
+    @UserDefault(key: Keys.ghostMode.rawValue)
+    public var ghostMode: Bool
+
+    @UserDefault(key: Keys.ghostDontReadMessages.rawValue)
+    public var ghostDontReadMessages: Bool
+
+    @UserDefault(key: Keys.ghostDontReadStories.rawValue)
+    public var ghostDontReadStories: Bool
+
+    @UserDefault(key: Keys.ghostDontSendOnline.rawValue)
+    public var ghostDontSendOnline: Bool
+
+    @UserDefault(key: Keys.ghostDontSendTyping.rawValue)
+    public var ghostDontSendTyping: Bool
+
+    @UserDefault(key: Keys.ghostDontSendUploadProgress.rawValue)
+    public var ghostDontSendUploadProgress: Bool
+
+    @UserDefault(key: Keys.ghostSendOfflineAfterOnline.rawValue)
+    public var ghostSendOfflineAfterOnline: Bool
+
+    @UserDefault(key: Keys.ghostMarkReadAfterSend.rawValue)
+    public var ghostMarkReadAfterSend: Bool
+
+    @UserDefault(key: Keys.ghostShowToggleInChatList.rawValue)
+    public var ghostShowToggleInChatList: Bool
+}
+
+// MARK: Ghost mode
+extension SGSimpleSettings {
+    public var ghostBlocksReadMessages: Bool {
+        return self.ghostMode && self.ghostDontReadMessages
+    }
+
+    public var ghostBlocksReadStories: Bool {
+        return self.ghostMode && self.ghostDontReadStories
+    }
+
+    public var ghostBlocksOnline: Bool {
+        return self.ghostMode && self.ghostDontSendOnline
+    }
+
+    public var ghostBlocksTyping: Bool {
+        return self.ghostMode && self.ghostDontSendTyping
+    }
+
+    public var ghostBlocksUploadProgress: Bool {
+        return self.ghostMode && self.ghostDontSendUploadProgress
+    }
+
+    public var ghostSendsOfflineAfterOnline: Bool {
+        return self.ghostMode && self.ghostDontSendOnline && self.ghostSendOfflineAfterOnline
+    }
+
+    public var ghostReadsAfterSend: Bool {
+        return self.ghostMode && self.ghostDontReadMessages && self.ghostMarkReadAfterSend
+    }
 }
 
 extension SGSimpleSettings {

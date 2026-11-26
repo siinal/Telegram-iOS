@@ -28,6 +28,7 @@ private enum SGControllerSection: Int32, SGItemListSection {
     case search
     case trending
     case content
+    case ghost
     case tabs
     case folders
     case chatList
@@ -108,6 +109,14 @@ private enum SGBoolSetting: String {
     case videoControlsInFooter
     case combinedMediaViewer
     case hideAccountInNotifications
+    case ghostMode
+    case ghostDontReadMessages
+    case ghostDontReadStories
+    case ghostDontSendOnline
+    case ghostDontSendTyping
+    case ghostDontSendUploadProgress
+    case ghostSendOfflineAfterOnline
+    case ghostMarkReadAfterSend
 }
 
 private enum SGOneFromManySetting: String {
@@ -170,6 +179,23 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
         id.increment(1)
     }
     
+    // MARK: Ghost mode
+    let ghostRu = lang == "ru" || lang == "uk" || lang == "be"
+    func ghostText(_ ru: String, _ en: String) -> String {
+        return ghostRu ? ru : en
+    }
+    let ghostOn = SGSimpleSettings.shared.ghostMode
+    entries.append(.header(id: id.count, section: .ghost, text: ghostText("РЕЖИМ ПРИЗРАКА", "GHOST MODE"), badge: nil))
+    entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostMode, value: ghostOn, text: ghostText("Режим призрака", "Ghost Mode"), enabled: true))
+    entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostDontReadMessages, value: SGSimpleSettings.shared.ghostDontReadMessages, text: ghostText("Не отправлять прочтение", "Don't Send Read Receipts"), enabled: ghostOn))
+    entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostDontReadStories, value: SGSimpleSettings.shared.ghostDontReadStories, text: ghostText("Не отмечать истории просмотренными", "Don't Mark Stories as Viewed"), enabled: ghostOn))
+    entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostDontSendOnline, value: SGSimpleSettings.shared.ghostDontSendOnline, text: ghostText("Не отправлять «в сети»", "Don't Send Online Status"), enabled: ghostOn))
+    entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostDontSendTyping, value: SGSimpleSettings.shared.ghostDontSendTyping, text: ghostText("Не отправлять «печатает»", "Don't Send Typing Status"), enabled: ghostOn))
+    entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostDontSendUploadProgress, value: SGSimpleSettings.shared.ghostDontSendUploadProgress, text: ghostText("Не отправлять статус загрузки", "Don't Send Upload Status"), enabled: ghostOn))
+    entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostSendOfflineAfterOnline, value: SGSimpleSettings.shared.ghostSendOfflineAfterOnline, text: ghostText("Уходить в оффлайн после отправки", "Go Offline After Sending"), enabled: ghostOn && SGSimpleSettings.shared.ghostDontSendOnline))
+    entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostMarkReadAfterSend, value: SGSimpleSettings.shared.ghostMarkReadAfterSend, text: ghostText("Читать чат после отправки сообщения", "Mark Chat Read After Sending"), enabled: ghostOn && SGSimpleSettings.shared.ghostDontReadMessages))
+    entries.append(.notice(id: id.count, section: .ghost, text: ghostText("Отправка сообщения всё равно делает вас «в сети» — так работает сервер Telegram. Использование может нарушать правила Telegram.", "Sending a message still shows you online, this is how Telegram servers work. Using this may violate Telegram's Terms of Service.")))
+
     entries.append(.header(id: id.count, section: .tabs, text: i18n("Settings.Tabs.Header", lang), badge: nil))
     entries.append(.toggle(id: id.count, section: .tabs, settingName: .hideTabBar, value: SGSimpleSettings.shared.hideTabBar, text: i18n("Settings.Tabs.HideTabBar", lang), enabled: true))
     entries.append(.toggle(id: id.count, section: .tabs, settingName: .showContactsTab, value: callListSettings.showContactsTab, text: i18n("Settings.Tabs.ShowContacts", lang), enabled: !SGSimpleSettings.shared.hideTabBar))
@@ -407,6 +433,22 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
             SGSimpleSettings.shared.startTelescopeWithRearCam = value
         case .hideStories:
             SGSimpleSettings.shared.hideStories = value
+        case .ghostMode:
+            SGSimpleSettings.shared.ghostMode = value
+        case .ghostDontReadMessages:
+            SGSimpleSettings.shared.ghostDontReadMessages = value
+        case .ghostDontReadStories:
+            SGSimpleSettings.shared.ghostDontReadStories = value
+        case .ghostDontSendOnline:
+            SGSimpleSettings.shared.ghostDontSendOnline = value
+        case .ghostDontSendTyping:
+            SGSimpleSettings.shared.ghostDontSendTyping = value
+        case .ghostDontSendUploadProgress:
+            SGSimpleSettings.shared.ghostDontSendUploadProgress = value
+        case .ghostSendOfflineAfterOnline:
+            SGSimpleSettings.shared.ghostSendOfflineAfterOnline = value
+        case .ghostMarkReadAfterSend:
+            SGSimpleSettings.shared.ghostMarkReadAfterSend = value
         case .showProfileId:
             SGSimpleSettings.shared.showProfileId = value
         case .warnOnStoriesOpen:

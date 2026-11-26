@@ -2,6 +2,7 @@ import Foundation
 import Postbox
 internal import TelegramApi
 import SwiftSignalKit
+import SGSimpleSettings
 
 
 private enum PeerReadStateMarker: Equatable {
@@ -251,7 +252,29 @@ private func validatePeerReadState(network: Network, postbox: Postbox, stateMana
     return maybeAppliedReadState
 }
 
-private func pushPeerReadState(network: Network, postbox: Postbox, stateManager: AccountStateManager, peerId: PeerId, readState: PeerReadState) -> Signal<PeerReadState, PeerReadStateValidationError> {
+// MARK: Swiftgram ghost mode
+/// Pushes the chat's current read state even while ghost mode holds reads back.
+func sgGhostPushReadStateAfterSend(network: Network, postbox: Postbox, stateManager: AccountStateManager, peerId: PeerId) -> Signal<Never, NoError> {
+    return postbox.transaction { transaction -> PeerReadState? in
+        return transaction.getPeerReadStates(peerId)?.first(where: { $0.0 == Namespaces.Message.Cloud })?.1
+    }
+    |> mapToSignal { readState -> Signal<Never, NoError> in
+        guard let readState = readState else {
+            return .complete()
+        }
+        return pushPeerReadState(network: network, postbox: postbox, stateManager: stateManager, peerId: peerId, readState: readState, sgForce: true)
+        |> ignoreValues
+        |> `catch` { _ -> Signal<Never, NoError> in
+            return .complete()
+        }
+    }
+}
+
+private func pushPeerReadState(network: Network, postbox: Postbox, stateManager: AccountStateManager, peerId: PeerId, readState: PeerReadState, sgForce: Bool = false) -> Signal<PeerReadState, PeerReadStateValidationError> {
+    // MARK: Swiftgram ghost mode: the read stays local, the server is not told
+    if !sgForce && SGSimpleSettings.shared.ghostBlocksReadMessages {
+        return .single(readState)
+    }
     if peerId.namespace == Namespaces.Peer.SecretChat {
         // Decide whether a request is needed before looking the peer up: inputSecretChat goes
         // through loadedPeerWithId, which never emits when the peer row is missing and fails

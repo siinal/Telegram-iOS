@@ -147,6 +147,10 @@ private func requestActivity(postbox: Postbox, network: Network, accountPeerId: 
             if peerId == accountPeerId {
                 return .complete()
             }
+            // MARK: Swiftgram ghost mode
+            if sgGhostShouldBlockActivity(activity) {
+                return .complete()
+            }
             if let channel = peer as? TelegramChannel, case .broadcast = channel.info {
                 if let activity = activity {
                     switch activity {

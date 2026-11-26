@@ -7,8 +7,6 @@ on:
   workflow_dispatch:
   push:
     branches: [ master ]
-    paths:
-      - '.github/workflows/ios-build.yml'
 
 permissions:
   contents: write
