@@ -24,6 +24,7 @@ swift_library(
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/AsyncDisplayKit:AsyncDisplayKit",
         "//submodules/Display:Display",
+        "//submodules/UIKitRuntimeUtils:UIKitRuntimeUtils",
         "//submodules/Postbox:Postbox",
         "//submodules/TelegramCore:TelegramCore",
         "//submodules/TelegramPresentationData:TelegramPresentationData",
@@ -160,6 +161,7 @@ swift_library(
     deps = [
         ":ChatListUI",
         "//submodules/Display:Display",
+        "//submodules/UIKitRuntimeUtils:UIKitRuntimeUtils",
         "//submodules/TelegramCore:TelegramCore",
         "//submodules/Postbox:Postbox",
         "//submodules/TelegramPresentationData:TelegramPresentationData",
