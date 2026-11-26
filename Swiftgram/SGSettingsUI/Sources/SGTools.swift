@@ -5,6 +5,8 @@ import SGSwiftUI
 import SGSimpleSettings
 import AccountContext
 import Display
+import TelegramCore
+import SwiftSignalKit
 
 private func sgToolsText(_ lang: String, _ ru: String, _ en: String) -> String {
     return (lang == "ru" || lang == "uk" || lang == "be") ? ru : en
@@ -529,4 +531,45 @@ public func sgSettingsBackupController(context: AccountContext) -> ViewControlle
     ) {
         SGSettingsBackupView()
     }
+}
+
+// MARK: Saved deleted messages from all chats
+
+public func sgAllDeletedMessagesController(context: AccountContext) -> ViewController {
+    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+    let lang = presentationData.strings.baseLanguageCode
+    let title = sgToolsText(lang, "Все удалённые сообщения", "All Deleted Messages")
+    let model = SGTextViewerModel(text: "", isLoading: true)
+    let controller = sgTextViewerController(context: context, title: title, model: model)
+    let formatter = DateFormatter()
+    formatter.dateStyle = .short
+    formatter.timeStyle = .short
+    let _ = (sgCollectDeletedMessages(account: context.account)
+    |> deliverOnMainQueue).start(next: { items in
+        if items.isEmpty {
+            model.finish(text: sgToolsText(lang, "Сохранённых удалённых сообщений нет.", "No saved deleted messages."))
+            return
+        }
+        var parts: [String] = []
+        for item in items {
+            var body = item.text
+            if body.isEmpty {
+                body = item.hasMedia ? sgToolsText(lang, "[медиа]", "[media]") : "—"
+            }
+            let header = item.chatTitle + (item.authorTitle.isEmpty || item.authorTitle == item.chatTitle ? "" : " · " + item.authorTitle)
+            let sent = formatter.string(from: Date(timeIntervalSince1970: Double(item.timestamp)))
+            let deleted = formatter.string(from: Date(timeIntervalSince1970: Double(item.deletedDate)))
+            let deletedLabel: String = sgToolsText(lang, ", удалено ", ", deleted ")
+            var entry: String = header
+            entry += "\n"
+            entry += sent
+            entry += deletedLabel
+            entry += deleted
+            entry += "\n"
+            entry += body
+            parts.append(entry)
+        }
+        model.finish(text: parts.joined(separator: "\n\n— — —\n\n"))
+    })
+    return controller
 }

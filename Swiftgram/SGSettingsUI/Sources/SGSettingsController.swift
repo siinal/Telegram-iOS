@@ -164,6 +164,7 @@ private enum SGDisclosureLink: String {
     case clearShadowBan
     case calculator
     case settingsBackup
+    case allDeletedMessages
 }
 
 private struct PeerNameColorScreenState: Equatable {
@@ -238,6 +239,7 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     default:
         deletedMarkValue = ghostText("текст", "text")
     }
+    entries.append(.disclosure(id: id.count, section: .savedMessages, link: .allDeletedMessages, text: ghostText("Все удалённые сообщения", "All Deleted Messages")))
     entries.append(.oneFromManySelector(id: id.count, section: .savedMessages, settingName: .deletedMarkStyle, text: ghostText("Пометка удалённых", "Deleted Mark"), value: deletedMarkValue, enabled: SGSimpleSettings.shared.saveDeletedMessages))
     entries.append(.toggle(id: id.count, section: .savedMessages, settingName: .saveSelfDestructing, value: SGSimpleSettings.shared.saveSelfDestructing, text: ghostText("Не удалять исчезающие сообщения", "Keep Self-Destructing Messages"), enabled: true))
     entries.append(.notice(id: id.count, section: .savedMessages, text: ghostText("Удалённые собеседником сообщения остаются на этом устройстве с пометкой «удалено». История изменений открывается долгим нажатием на сообщение.", "Messages deleted by others stay on this device marked as deleted. Long-press a message to see its edit history.")))
@@ -871,6 +873,8 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
                 pushControllerImpl?(sgAIServiceController(context: context))
             case .calculator:
                 pushControllerImpl?(sgCalculatorController(context: context))
+            case .allDeletedMessages:
+                pushControllerImpl?(sgAllDeletedMessagesController(context: context))
             case .settingsBackup:
                 pushControllerImpl?(sgSettingsBackupController(context: context))
             case .clearShadowBan:

@@ -1,5 +1,6 @@
 import Foundation
 import Postbox
+import SwiftSignalKit
 import SGSimpleSettings
 
 // MARK: Swiftgram saved deleted and edited messages
@@ -156,4 +157,50 @@ func sgAddEditHistory(previous previousMessage: Message, updated message: StoreM
     var attributes = message.attributes.filter { !($0 is SGEditHistoryMessageAttribute) }
     attributes.append(SGEditHistoryMessageAttribute(entries: entries))
     return message.withUpdatedAttributes(attributes)
+}
+
+/// A saved deleted message found by the search across chats.
+public struct SGDeletedMessageItem {
+    public let chatTitle: String
+    public let authorTitle: String
+    public let timestamp: Int32
+    public let deletedDate: Int32
+    public let text: String
+    public let hasMedia: Bool
+}
+
+/// Finds saved deleted messages in the chat list (main list and archive), newest chats first.
+/// Bounded so a large database does not hold the Postbox queue for long.
+public func sgCollectDeletedMessages(account: Account, maxChats: Int = 300, maxMessagesPerChat: Int = 3000, maxResults: Int = 2000) -> Signal<[SGDeletedMessageItem], NoError> {
+    return account.postbox.transaction { transaction -> [SGDeletedMessageItem] in
+        var result: [SGDeletedMessageItem] = []
+        var peers: [Peer] = []
+        peers.append(contentsOf: transaction.getChatListPeers(groupId: .root, filterPredicate: nil, additionalFilter: nil))
+        peers.append(contentsOf: transaction.getChatListPeers(groupId: Namespaces.PeerGroup.archive, filterPredicate: nil, additionalFilter: nil))
+        for peer in peers.prefix(maxChats) {
+            if result.count >= maxResults {
+                break
+            }
+            var scanned = 0
+            transaction.withAllMessages(peerId: peer.id, reversed: true, { message in
+                scanned += 1
+                if scanned > maxMessagesPerChat || result.count >= maxResults {
+                    return false
+                }
+                if let deletedDate = message.sgDeletedDate {
+                    result.append(SGDeletedMessageItem(
+                        chatTitle: peer.debugDisplayTitle,
+                        authorTitle: message.author?.debugDisplayTitle ?? "",
+                        timestamp: message.timestamp,
+                        deletedDate: deletedDate,
+                        text: message.text,
+                        hasMedia: !message.media.isEmpty
+                    ))
+                }
+                return true
+            })
+        }
+        result.sort(by: { $0.deletedDate > $1.deletedDate })
+        return result
+    }
 }
