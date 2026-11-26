@@ -257,6 +257,10 @@ extension ChatControllerImpl {
         if let _ = self.presentationInterfaceState.slowmodeState, !isScheduledMessages {
             updatedAction = .preview
         }
+        // MARK: Swiftgram: review voice and video messages before sending
+        if SGSimpleSettings.shared.confirmVoiceSend, case .send = updatedAction {
+            updatedAction = .preview
+        }
         
         var sendImmediately = false
         if let _ = self.presentationInterfaceState.sendPaidMessageStars, case .send = action {

@@ -135,6 +135,7 @@ private enum SGBoolSetting: String {
     case ghostSendAsScheduled
     case confirmStickerSend
     case confirmGifSend
+    case confirmVoiceSend
 }
 
 private enum SGOneFromManySetting: String {
@@ -249,6 +250,7 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
 
     entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .confirmStickerSend, value: SGSimpleSettings.shared.confirmStickerSend, text: ghostText("Подтверждать отправку стикеров", "Confirm Sending Stickers"), enabled: true))
     entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .confirmGifSend, value: SGSimpleSettings.shared.confirmGifSend, text: ghostText("Подтверждать отправку GIF", "Confirm Sending GIFs"), enabled: true))
+    entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .confirmVoiceSend, value: SGSimpleSettings.shared.confirmVoiceSend, text: ghostText("Прослушивать голосовые перед отправкой", "Review Voice Messages Before Sending"), enabled: true))
 
     // MARK: Tools
     entries.append(.header(id: id.count, section: .sgTools, text: ghostText("ИНСТРУМЕНТЫ", "TOOLS"), badge: nil))
@@ -549,6 +551,8 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
             SGSimpleSettings.shared.confirmStickerSend = value
         case .confirmGifSend:
             SGSimpleSettings.shared.confirmGifSend = value
+        case .confirmVoiceSend:
+            SGSimpleSettings.shared.confirmVoiceSend = value
         case .showProfileId:
             SGSimpleSettings.shared.showProfileId = value
         case .warnOnStoriesOpen:
