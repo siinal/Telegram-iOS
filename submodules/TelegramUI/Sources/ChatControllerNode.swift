@@ -827,7 +827,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             return getMessageTransitionNode?()
         })
 
-        self.historyNodeContainer = HistoryNodeContainer(isSecret: chatLocation.peerId?.namespace == Namespaces.Peer.SecretChat)
+        self.historyNodeContainer = HistoryNodeContainer(isSecret: chatLocation.peerId?.namespace == Namespaces.Peer.SecretChat || SGSimpleSettings.shared.streamerMode)
         
         self.historyNodeContainer.contentNode.addSubnode(self.historyNode)
 
@@ -1327,7 +1327,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             }
         }
         
-        let isSecret = self.chatPresentationInterfaceState.copyProtectionEnabled || self.chatLocation.peerId?.namespace == Namespaces.Peer.SecretChat || self.chatLocation.peerId?.isVerificationCodes == true
+        let isSecret = self.chatPresentationInterfaceState.copyProtectionEnabled || self.chatLocation.peerId?.namespace == Namespaces.Peer.SecretChat || self.chatLocation.peerId?.isVerificationCodes == true || SGSimpleSettings.shared.streamerMode // MARK: Swiftgram streamer mode
         if self.historyNodeContainer.isSecret != isSecret {
             #if DEBUG
             self.historyNodeContainer.isSecret = false

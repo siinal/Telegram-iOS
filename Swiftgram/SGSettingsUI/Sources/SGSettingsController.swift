@@ -128,6 +128,7 @@ private enum SGBoolSetting: String {
     case filterHideBlocked
     case filterInPrivateChats
     case removeLinkTracking
+    case streamerMode
 }
 
 private enum SGOneFromManySetting: String {
@@ -226,9 +227,11 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.notice(id: id.count, section: .filters, text: ghostText("Подходящие под шаблоны сообщения не показываются в чатах. Они не удаляются и снова появятся, если выключить фильтр.", "Messages matching the patterns are not shown in chats. They are not deleted and come back when the filter is off.")))
 
     // MARK: Link privacy
-    entries.append(.header(id: id.count, section: .linkPrivacy, text: ghostText("ССЫЛКИ", "LINKS"), badge: nil))
+    entries.append(.header(id: id.count, section: .linkPrivacy, text: ghostText("ПРИВАТНОСТЬ", "PRIVACY"), badge: nil))
     entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .removeLinkTracking, value: SGSimpleSettings.shared.removeLinkTracking, text: ghostText("Убирать слежку из ссылок", "Remove Link Tracking"), enabled: true))
     entries.append(.notice(id: id.count, section: .linkPrivacy, text: ghostText("Из отправляемых ссылок удаляются параметры отслеживания: utm_*, fbclid, gclid, si и другие.", "Tracking parameters such as utm_*, fbclid, gclid and si are removed from links you send.")))
+    entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .streamerMode, value: SGSimpleSettings.shared.streamerMode, text: ghostText("Режим стримера", "Streamer Mode"), enabled: true))
+    entries.append(.notice(id: id.count, section: .linkPrivacy, text: ghostText("Список чатов и переписки не видны на записи и трансляции экрана и на скриншотах. Нужен перезапуск.", "The chat list and chats are hidden from screen recordings, streams and screenshots. Requires a restart.")))
 
     entries.append(.header(id: id.count, section: .tabs, text: i18n("Settings.Tabs.Header", lang), badge: nil))
     entries.append(.toggle(id: id.count, section: .tabs, settingName: .hideTabBar, value: SGSimpleSettings.shared.hideTabBar, text: i18n("Settings.Tabs.HideTabBar", lang), enabled: true))
@@ -510,6 +513,9 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
             SGSimpleSettings.shared.filterInPrivateChats = value
         case .removeLinkTracking:
             SGSimpleSettings.shared.removeLinkTracking = value
+        case .streamerMode:
+            SGSimpleSettings.shared.streamerMode = value
+            askForRestart?()
         case .showProfileId:
             SGSimpleSettings.shared.showProfileId = value
         case .warnOnStoriesOpen:

@@ -1282,6 +1282,10 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         self.backgroundColor = presentationData.theme.chatList.backgroundColor
         
         self.addSubnode(self.mainContainerNode)
+        // MARK: Swiftgram streamer mode
+        if SGSimpleSettings.shared.streamerMode {
+            setLayerDisableScreenshots(self.mainContainerNode.layer, true)
+        }
         
         
         self.mainContainerNode.contentOffsetChanged = { [weak self] offset, listView in
