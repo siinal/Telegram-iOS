@@ -3030,6 +3030,23 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
                                     context.switchAccount()
                                 case .appIcon:
                                     context.openAppIcon()
+                                case .sgGhostMode:
+                                    // MARK: Swiftgram ghost mode shortcut
+                                    SGSimpleSettings.shared.ghostMode = !SGSimpleSettings.shared.ghostMode
+                                    let presentationData = context.context.sharedContext.currentPresentationData.with { $0 }
+                                    let updatedItem = sgGhostShortcutItem(strings: presentationData.strings).shortcutItem()
+                                    UIApplication.shared.shortcutItems = UIApplication.shared.shortcutItems?.map { item in
+                                        return item.type == updatedItem.type ? updatedItem : item
+                                    }
+                                    let lang = presentationData.strings.baseLanguageCode
+                                    let isRu = lang == "ru" || lang == "uk" || lang == "be"
+                                    let text: String
+                                    if SGSimpleSettings.shared.ghostMode {
+                                        text = isRu ? "Режим призрака включён 👻" : "Ghost mode is on 👻"
+                                    } else {
+                                        text = isRu ? "Режим призрака выключен" : "Ghost mode is off"
+                                    }
+                                    context.context.sharedContext.presentGlobalController(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: text, timeout: nil, customUndoText: nil), action: { _ in return false }), nil)
                             }
                         }
                     }
