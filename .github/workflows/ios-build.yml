@@ -143,7 +143,7 @@ jobs:
           python3 -u build-system/Make/Make.py \
             --bazelUserRoot="/private/var/tmp/_bazel_containerhost" \
             $OVERRIDE_XCODE \
-            build \
+            build --continueOnError \
             --configurationPath="build-system/ci-configuration.json" \
             --codesigningInformationPath=build-system/fake-codesigning \
             --configuration=release_arm64 \
