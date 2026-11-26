@@ -88,13 +88,46 @@ public final class SGBlockedPeers {
     }
 }
 
+// MARK: Swiftgram shadow ban
+
+private let sgShadowBanCache = Atomic<(raw: [String], ids: Set<Int64>)?>(value: nil)
+
+private func sgShadowBannedIds() -> Set<Int64> {
+    let raw = SGSimpleSettings.shared.shadowBannedPeerIds
+    return sgShadowBanCache.modify { current in
+        if let current, current.raw == raw {
+            return current
+        }
+        return (raw: raw, ids: Set(raw.compactMap { Int64($0) }))
+    }?.ids ?? []
+}
+
+public func sgIsShadowBanned(_ peerId: PeerId) -> Bool {
+    return sgShadowBannedIds().contains(peerId.toInt64())
+}
+
+public func sgSetShadowBanned(_ peerId: PeerId, _ value: Bool) {
+    var raw = SGSimpleSettings.shared.shadowBannedPeerIds
+    let key = String(peerId.toInt64())
+    raw.removeAll(where: { $0 == key })
+    if value {
+        raw.append(key)
+    }
+    SGSimpleSettings.shared.shadowBannedPeerIds = raw
+}
+
 /// Whether an incoming message is hidden from the chat by the filters.
 public func sgIsMessageFiltered(_ message: Message, accountPeerId: PeerId) -> Bool {
     let settings = SGSimpleSettings.shared
-    guard settings.filterEnabled else {
+    if !message.flags.contains(.Incoming) || message.id.peerId == accountPeerId {
         return false
     }
-    if !message.flags.contains(.Incoming) || message.id.peerId == accountPeerId {
+    // Shadow-banned users are hidden in groups and channels whether the filters are on or not.
+    let isPrivate = message.id.peerId.namespace == Namespaces.Peer.CloudUser || message.id.peerId.namespace == Namespaces.Peer.SecretChat
+    if !isPrivate, let authorId = message.author?.id, authorId != accountPeerId, sgIsShadowBanned(authorId) {
+        return true
+    }
+    guard settings.filterEnabled else {
         return false
     }
     if message.media.contains(where: { $0 is TelegramMediaAction }) {

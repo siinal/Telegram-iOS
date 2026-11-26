@@ -1,3 +1,4 @@
+import LocalizedPeerData
 import SGSettingsUI
 import SGSimpleSettings // MARK: Swiftgram
 import PeerInfoUI
@@ -1607,6 +1608,10 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         }
         if SGSimpleSettings.shared.ghostBlocksReadMessages && message.id.namespace == Namespaces.Message.Cloud {
             sgActions.append(sgMakeContextMenuAction(.ghostMarkRead(context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+        }
+        if message.flags.contains(.Incoming), message.id.peerId.namespace != Namespaces.Peer.CloudUser, let author = message.author, author.id != context.account.peerId, author.id != message.id.peerId {
+            let authorName = EnginePeer(author).compactDisplayTitle
+            sgActions.append(sgMakeContextMenuAction(.shadowBan(authorId: author.id, authorName: authorName), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
         }
         if SGSimpleSettings.shared.saveDeletedMessages {
             sgActions.append(sgMakeContextMenuAction(.deletedList(controllerInteraction: controllerInteraction, context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))

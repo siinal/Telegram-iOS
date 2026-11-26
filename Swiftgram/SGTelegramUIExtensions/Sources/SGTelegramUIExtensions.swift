@@ -4,6 +4,7 @@ import SGStrings
 import UndoUI
 //
 import AccountContext
+import LocalizedPeerData
 import ContactListUI
 import ContextUI
 import Display
@@ -105,6 +106,7 @@ enum SGContextMenuActionFactory {
     case ghostMarkRead(context: AccountContext)
     case messageShot(context: AccountContext, view: () -> UIView?)
     case deletedList(controllerInteraction: ChatControllerInteraction, context: AccountContext)
+    case shadowBan(authorId: EnginePeer.Id, authorName: String)
 }
 
 /// Draws a message bubble on the chat background colour, with a margin.
@@ -285,6 +287,22 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
             |> deliverOnMainQueue).start(next: { items in
                 model.finish(text: items.isEmpty ? (isRu ? "В этом чате нет сохранённых удалённых сообщений." : "No saved deleted messages in this chat.") : items.joined(separator: "\n\n— — —\n\n"))
             })
+        }))
+    case let .shadowBan(authorId, authorName):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        let isBanned = sgIsShadowBanned(authorId)
+        let text: String
+        if isBanned {
+            text = isRu ? "Показывать \(authorName)" : "Show \(authorName)"
+        } else {
+            text = isRu ? "Скрыть \(authorName) (тень)" : "Hide \(authorName) (Shadow Ban)"
+        }
+        return .action(ContextMenuActionItem(text: text, icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: isBanned ? "Chat/Context Menu/Eye" : "Chat/Context Menu/Ban"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            f(.default)
+            sgSetShadowBanned(authorId, !isBanned)
         }))
     case let .ghostMarkRead(context):
         let lang = chatPresentationInterfaceState.strings.baseLanguageCode

@@ -156,6 +156,7 @@ private enum SGDisclosureLink: String {
     case languageSettings
     case filterPatterns
     case aiService
+    case clearShadowBan
 }
 
 private struct PeerNameColorScreenState: Equatable {
@@ -231,7 +232,9 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.disclosure(id: id.count, section: .filters, link: .filterPatterns, text: ghostText("Шаблоны (\(SGSimpleSettings.shared.filterPatterns.count))", "Patterns (\(SGSimpleSettings.shared.filterPatterns.count))")))
     entries.append(.toggle(id: id.count, section: .filters, settingName: .filterHideBlocked, value: SGSimpleSettings.shared.filterHideBlocked, text: ghostText("Скрывать заблокированных в группах", "Hide Blocked Users in Groups"), enabled: filterOn))
     entries.append(.toggle(id: id.count, section: .filters, settingName: .filterInPrivateChats, value: SGSimpleSettings.shared.filterInPrivateChats, text: ghostText("Применять в личных чатах", "Apply in Private Chats"), enabled: filterOn))
-    entries.append(.notice(id: id.count, section: .filters, text: ghostText("Подходящие под шаблоны сообщения не показываются в чатах. Они не удаляются и снова появятся, если выключить фильтр.", "Messages matching the patterns are not shown in chats. They are not deleted and come back when the filter is off.")))
+    let shadowBanCount = SGSimpleSettings.shared.shadowBannedPeerIds.count
+    entries.append(.disclosure(id: id.count, section: .filters, link: .clearShadowBan, text: ghostText("Очистить теневой бан (" + String(shadowBanCount) + ")", "Clear Shadow Ban (" + String(shadowBanCount) + ")")))
+    entries.append(.notice(id: id.count, section: .filters, text: ghostText("Теневой бан: долгое нажатие на сообщение → Swiftgram → «Скрыть … (тень)», и сообщения этого человека пропадут во всех группах и каналах. Подходящие под шаблоны сообщения не показываются в чатах. Они не удаляются и снова появятся, если выключить фильтр.", "Shadow ban: long-press a message → Swiftgram → Hide … (Shadow Ban) to hide that person in all groups and channels. Messages matching the patterns are not shown in chats. They are not deleted and come back when the filter is off.")))
 
     // MARK: Link privacy
     entries.append(.header(id: id.count, section: .linkPrivacy, text: ghostText("ПРИВАТНОСТЬ", "PRIVACY"), badge: nil))
@@ -821,6 +824,9 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
                 pushControllerImpl?(sgFilterPatternsController(context: context))
             case .aiService:
                 pushControllerImpl?(sgAIServiceController(context: context))
+            case .clearShadowBan:
+                SGSimpleSettings.shared.shadowBannedPeerIds = []
+                simplePromise.set(true)
             case .contentSettings:
                 let _ = (getSGSettingsURL(context: context) |> deliverOnMainQueue).start(next: { [weak context] url in
                     guard let strongContext = context else {
