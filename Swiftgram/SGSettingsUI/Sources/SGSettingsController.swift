@@ -163,6 +163,7 @@ private enum SGDisclosureLink: String {
     case aiService
     case clearShadowBan
     case calculator
+    case settingsBackup
 }
 
 private struct PeerNameColorScreenState: Equatable {
@@ -269,6 +270,7 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.header(id: id.count, section: .sgTools, text: ghostText("ИНСТРУМЕНТЫ", "TOOLS"), badge: nil))
     entries.append(.disclosure(id: id.count, section: .sgTools, link: .aiService, text: ghostText("ИИ-сервис", "AI Service")))
     entries.append(.disclosure(id: id.count, section: .sgTools, link: .calculator, text: ghostText("Калькулятор", "Calculator")))
+    entries.append(.disclosure(id: id.count, section: .sgTools, link: .settingsBackup, text: ghostText("Резервная копия настроек", "Settings Backup")))
     entries.append(.notice(id: id.count, section: .sgTools, text: ghostText("После настройки в меню Swiftgram у сообщения появятся «ИИ: пересказать» и «ИИ: перевести». «Текст песни» есть в меню любого музыкального файла.", "Once set up, the message Swiftgram menu gets AI: Summarize and AI: Translate. Lyrics are in the menu of any music file.")))
 
     entries.append(.header(id: id.count, section: .tabs, text: i18n("Settings.Tabs.Header", lang), badge: nil))
@@ -869,6 +871,8 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
                 pushControllerImpl?(sgAIServiceController(context: context))
             case .calculator:
                 pushControllerImpl?(sgCalculatorController(context: context))
+            case .settingsBackup:
+                pushControllerImpl?(sgSettingsBackupController(context: context))
             case .clearShadowBan:
                 SGSimpleSettings.shared.shadowBannedPeerIds = []
                 simplePromise.set(true)

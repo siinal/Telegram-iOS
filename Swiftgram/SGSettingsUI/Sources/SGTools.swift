@@ -437,3 +437,96 @@ public func sgCalculatorController(context: AccountContext) -> ViewController {
         SGCalculatorView()
     }
 }
+
+// MARK: Settings backup
+
+private let sgBackupExcludedKeys: Set<String> = [
+    SGSimpleSettings.Keys.status.rawValue,
+    SGSimpleSettings.Keys.primaryUserId.rawValue,
+    SGSimpleSettings.Keys.regDateCache.rawValue,
+    SGSimpleSettings.Keys.lastAccountFolders.rawValue,
+    SGSimpleSettings.Keys.dismissedSGSuggestions.rawValue,
+    SGSimpleSettings.Keys.canUseNY.rawValue,
+    SGSimpleSettings.Keys.canUseStealthMode.rawValue,
+    SGSimpleSettings.Keys.duckyAppIconAvailable.rawValue,
+    SGSimpleSettings.Keys.aiApiKey.rawValue
+]
+
+/// Swiftgram settings as JSON. The AI key and account-specific state are left out.
+public func sgExportSettingsJSON() -> String? {
+    var result: [String: Any] = [:]
+    for key in SGSimpleSettings.Keys.allCases {
+        if sgBackupExcludedKeys.contains(key.rawValue) {
+            continue
+        }
+        guard let value = UserDefaults.standard.object(forKey: key.rawValue) else {
+            continue
+        }
+        if JSONSerialization.isValidJSONObject([value]) {
+            result[key.rawValue] = value
+        }
+    }
+    guard let data = try? JSONSerialization.data(withJSONObject: ["swiftgramSettings": 1, "values": result], options: [.prettyPrinted, .sortedKeys]) else {
+        return nil
+    }
+    return String(data: data, encoding: .utf8)
+}
+
+/// Applies settings exported by `sgExportSettingsJSON`. Returns how many were applied, or nil when the text is not a backup.
+public func sgImportSettingsJSON(_ text: String) -> Int? {
+    guard let data = text.data(using: .utf8), let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any], root["swiftgramSettings"] != nil, let values = root["values"] as? [String: Any] else {
+        return nil
+    }
+    let known = Set(SGSimpleSettings.Keys.allCases.map { $0.rawValue })
+    var count = 0
+    for (key, value) in values {
+        if !known.contains(key) || sgBackupExcludedKeys.contains(key) {
+            continue
+        }
+        UserDefaults.standard.set(value, forKey: key)
+        count += 1
+    }
+    return count
+}
+
+private struct SGSettingsBackupView: View {
+    @Environment(\.lang) var lang: String
+    @State private var statusText: String = ""
+
+    var body: some View {
+        List {
+            Section(footer: Text(sgToolsText(lang, "Настройки копируются в буфер обмена текстом. Сохрани его, например, в «Избранном». Ключ ИИ-сервиса не копируется.", "Settings are copied to the clipboard as text. Keep it, for example, in Saved Messages. The AI service key is not included."))) {
+                Button(sgToolsText(lang, "Скопировать настройки", "Copy Settings")) {
+                    if let json = sgExportSettingsJSON() {
+                        UIPasteboard.general.string = json
+                        statusText = sgToolsText(lang, "Настройки скопированы.", "Settings copied.")
+                    }
+                }
+                Button(sgToolsText(lang, "Восстановить из буфера обмена", "Restore from Clipboard")) {
+                    if let text = UIPasteboard.general.string, let count = sgImportSettingsJSON(text) {
+                        statusText = sgToolsText(lang, "Восстановлено настроек: ", "Settings restored: ") + String(count) + sgToolsText(lang, ". Перезапусти приложение.", ". Restart the app.")
+                    } else {
+                        statusText = sgToolsText(lang, "В буфере обмена нет резервной копии настроек.", "The clipboard has no settings backup.")
+                    }
+                }
+            }
+            if !statusText.isEmpty {
+                Section {
+                    Text(statusText)
+                }
+            }
+        }
+        .sgNavigationTitle(sgToolsText(lang, "Резервная копия", "Backup"))
+    }
+}
+
+public func sgSettingsBackupController(context: AccountContext) -> ViewController {
+    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+    return SGSwiftUIController(
+        title: sgToolsText(presentationData.strings.baseLanguageCode, "Резервная копия", "Backup"),
+        presentationData: presentationData,
+        presentationDataSignal: context.sharedContext.presentationData
+    ) {
+        SGSettingsBackupView()
+    }
+}
