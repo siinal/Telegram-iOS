@@ -79,6 +79,7 @@ final class ChatSendMessageContextScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
     let sgTranslationContext: (outgoingMessageTranslateToLang: String?, translate: (() -> Void)?, changeTranslationLanguage: (() -> ())?)
+    let sgAIRewrite: (() -> Void)?
     let initialData: ChatSendMessageContextScreen.InitialData
     let context: AccountContext
     let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?
@@ -102,6 +103,7 @@ final class ChatSendMessageContextScreenComponent: Component {
     // MARK: Swiftgram
     init(
         sgTranslationContext: (outgoingMessageTranslateToLang: String?, translate: (() -> Void)?, changeTranslationLanguage: (() -> ())?) = (outgoingMessageTranslateToLang: nil, translate: nil, changeTranslationLanguage: nil),
+        sgAIRewrite: (() -> Void)? = nil,
         initialData: ChatSendMessageContextScreen.InitialData,
         context: AccountContext,
         updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?,
@@ -124,6 +126,7 @@ final class ChatSendMessageContextScreenComponent: Component {
         richTextPreview: ChatSendMessageContextScreenRichTextPreview? = nil
     ) {
         self.sgTranslationContext = sgTranslationContext
+        self.sgAIRewrite = sgAIRewrite
         self.initialData = initialData
         self.context = context
         self.updatedPresentationData = updatedPresentationData
@@ -678,6 +681,24 @@ final class ChatSendMessageContextScreenComponent: Component {
             }
             
             // MARK: Swiftgram
+            if let sgAIRewrite = component.sgAIRewrite {
+                let lang = presentationData.strings.baseLanguageCode
+                let isRu = lang == "ru" || lang == "uk" || lang == "be"
+                items.append(.action(ContextMenuActionItem(
+                    id: AnyHashable("sgAIRewrite"),
+                    text: isRu ? "ИИ: улучшить текст" : "AI: Improve Text",
+                    icon: { theme in
+                        return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Edit"), color: theme.contextMenu.primaryColor)
+                    }, action: { [weak self] _, _ in
+                        guard let self else {
+                            return
+                        }
+                        self.animateOutToEmpty = true
+                        sgAIRewrite()
+                        self.environment?.controller()?.dismiss()
+                    }
+                )))
+            }
             if !isSecret {
                 if let outgoingMessageTranslateToLang = component.sgTranslationContext.outgoingMessageTranslateToLang {
                     var languageCode = presentationData.strings.baseLanguageCode
@@ -1574,6 +1595,7 @@ public class ChatSendMessageContextScreen: ViewControllerComponentContainer, Cha
     
     public init(
         sgTranslationContext: (outgoingMessageTranslateToLang: String?, translate: (() -> Void)?, changeTranslationLanguage: (() -> ())?) = (outgoingMessageTranslateToLang: nil, translate: nil, changeTranslationLanguage: nil),
+        sgAIRewrite: (() -> Void)? = nil,
         initialData: InitialData,
         context: AccountContext,
         updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?,
@@ -1601,6 +1623,7 @@ public class ChatSendMessageContextScreen: ViewControllerComponentContainer, Cha
             context: context,
             component: ChatSendMessageContextScreenComponent(
                 sgTranslationContext: sgTranslationContext,
+                sgAIRewrite: sgAIRewrite,
                 initialData: initialData,
                 context: context,
                 updatedPresentationData: updatedPresentationData,

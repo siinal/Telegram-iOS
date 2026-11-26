@@ -1,3 +1,5 @@
+import PresentationDataUtils
+import SGSettingsUI
 // MARK: Swiftgram
 import SGSimpleSettings
 import TextFormat
@@ -100,6 +102,37 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
             return
         }
         
+        // MARK: Swiftgram AI rewrite of the text being typed
+        var sgAIRewrite: (() -> Void)?
+        if sgIsAIServiceConfigured && !selfController.presentationInterfaceState.interfaceState.effectiveInputState.inputText.string.isEmpty {
+            sgAIRewrite = { [weak selfController] in
+                guard let selfController else {
+                    return
+                }
+                let originalText = selfController.presentationInterfaceState.interfaceState.effectiveInputState.inputText.string
+                let lang = selfController.presentationData.strings.baseLanguageCode
+                let isRu = lang == "ru" || lang == "uk" || lang == "be"
+                let instruction = isRu ? "Улучши текст сообщения пользователя: исправь ошибки и сделай его понятнее, сохрани смысл, тон и язык. Ответь только готовым текстом." : "Improve the user's message: fix mistakes and make it clearer, keeping its meaning, tone and language. Reply with the final text only."
+                sgAskAI(instruction: instruction, text: originalText, completion: { [weak selfController] result in
+                    guard let selfController else {
+                        return
+                    }
+                    switch result {
+                    case let .success(improved):
+                        let newInputText = NSAttributedString(string: improved)
+                        let newTextInputState = ChatTextInputState(inputText: newInputText, selectionRange: newInputText.length ..< newInputText.length)
+                        selfController.updateChatPresentationInterfaceState(interactive: true, { state in
+                            return state.updatedInterfaceState { interfaceState in
+                                return interfaceState.withUpdatedEffectiveInputState(newTextInputState)
+                            }
+                        })
+                    case let .failure(error):
+                        selfController.present(textAlertController(context: selfController.context, title: nil, text: (isRu ? "ИИ: ошибка. " : "AI error. ") + error.localizedDescription, actions: [TextAlertAction(type: .defaultAction, title: selfController.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
+                    }
+                })
+            }
+        }
+        
         // MARK: Swiftgram
         let outgoingMessageTranslateToLang = SGSimpleSettings.shared.outgoingLanguageTranslation[SGSimpleSettings.makeOutgoingLanguageTranslationKey(accountId: selfController.context.account.peerId.id._internalGetInt64Value(), peerId: peer.id.id._internalGetInt64Value())] ?? selfController.contentData?.state.predictedChatLanguage
                 
@@ -180,6 +213,7 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
             
             let controller = makeChatSendMessageActionSheetController(
                 sgTranslationContext: sgTranslationContext,
+                sgAIRewrite: sgAIRewrite,
                 initialData: initialData,
                 context: selfController.context,
                 updatedPresentationData: selfController.updatedPresentationData,
@@ -273,6 +307,7 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
 
             let controller = makeChatSendMessageActionSheetController(
                 sgTranslationContext: sgTranslationContext,
+                sgAIRewrite: sgAIRewrite,
                 initialData: initialData,
                 context: selfController.context,
                 updatedPresentationData: selfController.updatedPresentationData,
