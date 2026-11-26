@@ -291,6 +291,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
     let presentationReady = Promise<Bool>()
     
     var presentationInterfaceState: ChatPresentationInterfaceState
+    var sgSkipSendConfirmation: Bool = false // MARK: Swiftgram send confirmation
     let presentationInterfaceStatePromise: ValuePromise<ChatPresentationInterfaceState>
     public var presentationInterfaceStateSignal: Signal<Any, NoError> {
         return self.presentationInterfaceStatePromise.get() |> map { $0 }
@@ -2503,6 +2504,18 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             guard let strongSelf = self else {
                 return false
             }
+            // MARK: Swiftgram send confirmation
+            if SGSimpleSettings.shared.confirmStickerSend && !strongSelf.sgSkipSendConfirmation {
+                strongSelf.sgConfirmSend(isGif: false, send: { [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    self.sgSkipSendConfirmation = true
+                    let _ = self.controllerInteraction?.sendSticker(fileReference, silentPosting, schedule, query, clearInput, sourceView, sourceRect, sourceLayer, bubbleUpEmojiOrStickersets)
+                    self.sgSkipSendConfirmation = false
+                })
+                return false
+            }
             
             if let _ = strongSelf.presentationInterfaceState.slowmodeState, strongSelf.presentationInterfaceState.subject != .scheduledMessages {
                 if let sourceView, let sourceRect {
@@ -2779,6 +2792,18 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             }
         }, sendGif: { [weak self] fileReference, sourceView, sourceRect, silentPosting, schedule in
             if let strongSelf = self {
+                // MARK: Swiftgram send confirmation
+                if SGSimpleSettings.shared.confirmGifSend && !strongSelf.sgSkipSendConfirmation {
+                    strongSelf.sgConfirmSend(isGif: true, send: { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        self.sgSkipSendConfirmation = true
+                        let _ = self.controllerInteraction?.sendGif(fileReference, sourceView, sourceRect, silentPosting, schedule)
+                        self.sgSkipSendConfirmation = false
+                    })
+                    return false
+                }
                 if let _ = strongSelf.presentationInterfaceState.slowmodeState, strongSelf.presentationInterfaceState.subject != .scheduledMessages {
                     strongSelf.interfaceInteraction?.displaySlowmodeTooltip(sourceView, sourceRect)
                     return false
@@ -11745,5 +11770,25 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
     
     public var contentContainerNode: ASDisplayNode {
         return self.chatDisplayNode.contentContainerNode
+    }
+}
+
+// MARK: Swiftgram send confirmation
+extension ChatControllerImpl {
+    func sgConfirmSend(isGif: Bool, send: @escaping () -> Void) {
+        let lang = self.presentationData.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        let text: String
+        if isGif {
+            text = isRu ? "Отправить GIF?" : "Send this GIF?"
+        } else {
+            text = isRu ? "Отправить стикер?" : "Send this sticker?"
+        }
+        self.present(textAlertController(context: self.context, updatedPresentationData: self.updatedPresentationData, title: nil, text: text, actions: [
+            TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_Cancel, action: {}),
+            TextAlertAction(type: .defaultAction, title: isRu ? "Отправить" : "Send", action: {
+                send()
+            })
+        ]), in: .window(.root))
     }
 }

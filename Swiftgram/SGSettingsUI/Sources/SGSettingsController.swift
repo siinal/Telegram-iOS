@@ -133,6 +133,8 @@ private enum SGBoolSetting: String {
     case hideSponsoredMessages
     case saveSelfDestructing
     case ghostSendAsScheduled
+    case confirmStickerSend
+    case confirmGifSend
 }
 
 private enum SGOneFromManySetting: String {
@@ -243,6 +245,9 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .hideSponsoredMessages, value: SGSimpleSettings.shared.hideSponsoredMessages, text: ghostText("Скрывать рекламу в каналах", "Hide Sponsored Messages"), enabled: true))
     entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .streamerMode, value: SGSimpleSettings.shared.streamerMode, text: ghostText("Режим стримера", "Streamer Mode"), enabled: true))
     entries.append(.notice(id: id.count, section: .linkPrivacy, text: ghostText("Список чатов и переписки не видны на записи и трансляции экрана и на скриншотах. Нужен перезапуск.", "The chat list and chats are hidden from screen recordings, streams and screenshots. Requires a restart.")))
+
+    entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .confirmStickerSend, value: SGSimpleSettings.shared.confirmStickerSend, text: ghostText("Подтверждать отправку стикеров", "Confirm Sending Stickers"), enabled: true))
+    entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .confirmGifSend, value: SGSimpleSettings.shared.confirmGifSend, text: ghostText("Подтверждать отправку GIF", "Confirm Sending GIFs"), enabled: true))
 
     // MARK: Tools
     entries.append(.header(id: id.count, section: .sgTools, text: ghostText("ИНСТРУМЕНТЫ", "TOOLS"), badge: nil))
@@ -538,6 +543,10 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
             SGSimpleSettings.shared.saveSelfDestructing = value
         case .ghostSendAsScheduled:
             SGSimpleSettings.shared.ghostSendAsScheduled = value
+        case .confirmStickerSend:
+            SGSimpleSettings.shared.confirmStickerSend = value
+        case .confirmGifSend:
+            SGSimpleSettings.shared.confirmGifSend = value
         case .showProfileId:
             SGSimpleSettings.shared.showProfileId = value
         case .warnOnStoriesOpen:

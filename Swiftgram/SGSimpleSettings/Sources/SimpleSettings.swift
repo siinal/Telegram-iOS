@@ -209,6 +209,8 @@ public class SGSimpleSettings {
         case saveSelfDestructing
         case ghostSendAsScheduled
         case shadowBannedPeerIds
+        case confirmStickerSend
+        case confirmGifSend
     }
     
     public enum DownloadSpeedBoostValues: String, CaseIterable {
@@ -390,6 +392,8 @@ public class SGSimpleSettings {
         Keys.saveSelfDestructing.rawValue: false,
         Keys.ghostSendAsScheduled.rawValue: false,
         Keys.shadowBannedPeerIds.rawValue: [],
+        Keys.confirmStickerSend.rawValue: false,
+        Keys.confirmGifSend.rawValue: false,
     ]
     
     public static let groupDefaultValues: [String: Any] = [
@@ -767,6 +771,12 @@ public class SGSimpleSettings {
 
     @UserDefault(key: Keys.shadowBannedPeerIds.rawValue)
     public var shadowBannedPeerIds: [String]
+
+    @UserDefault(key: Keys.confirmStickerSend.rawValue)
+    public var confirmStickerSend: Bool
+
+    @UserDefault(key: Keys.confirmGifSend.rawValue)
+    public var confirmGifSend: Bool
 }
 
 // MARK: Ghost mode
