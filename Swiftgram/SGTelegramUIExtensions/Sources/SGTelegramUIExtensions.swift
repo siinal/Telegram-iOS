@@ -291,7 +291,16 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
                         if body.isEmpty {
                             body = searchMessage.media.isEmpty ? "—" : (isRu ? "[медиа]" : "[media]")
                         }
-                        result.append(author + " · " + sent + "\n" + (isRu ? "удалено " : "deleted ") + deleted + "\n" + body)
+                        let deletedLabel: String = isRu ? "удалено " : "deleted "
+                        var entry: String = author
+                        entry += " · "
+                        entry += sent
+                        entry += "\n"
+                        entry += deletedLabel
+                        entry += deleted
+                        entry += "\n"
+                        entry += body
+                        result.append(entry)
                     }
                     return true
                 })
@@ -322,7 +331,13 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
         let isRu = lang == "ru" || lang == "uk" || lang == "be"
         let peerId = message.id.peerId
         let isHidden = sgIsHiddenChat(peerId)
-        return .action(ContextMenuActionItem(text: isHidden ? (isRu ? "Вернуть чат в список" : "Unhide This Chat") : (isRu ? "Скрыть этот чат" : "Hide This Chat"), icon: { theme in
+        let actionTitle: String
+        if isHidden {
+            actionTitle = isRu ? "Вернуть чат в список" : "Unhide This Chat"
+        } else {
+            actionTitle = isRu ? "Скрыть этот чат" : "Hide This Chat"
+        }
+        return .action(ContextMenuActionItem(text: actionTitle, icon: { theme in
             return generateTintedImage(image: UIImage(bundleImageName: isHidden ? "Chat/Context Menu/Eye" : "Chat/Context Menu/EyeLocked"), color: theme.actionSheet.primaryTextColor)
         }, action: { _, f in
             f(.default)
@@ -385,7 +400,13 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
                     if let mediaLabel {
                         body = body.isEmpty ? mediaLabel : mediaLabel + " " + body
                     }
-                    var line = "[" + formatter.string(from: Date(timeIntervalSince1970: Double(item.timestamp))) + "] " + author + ": " + body
+                    let dateString: String = formatter.string(from: Date(timeIntervalSince1970: Double(item.timestamp)))
+                    var line: String = "["
+                    line += dateString
+                    line += "] "
+                    line += author
+                    line += ": "
+                    line += body
                     if item.sgDeletedDate != nil {
                         line += isRu ? " (удалено)" : " (deleted)"
                     }
