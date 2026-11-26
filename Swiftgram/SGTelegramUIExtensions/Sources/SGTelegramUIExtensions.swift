@@ -339,15 +339,31 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
                     }
                     count += 1
                     let author = item.author.flatMap { EnginePeer($0).displayTitle(strings: strings, displayOrder: nameDisplayOrder) } ?? ""
-                    var body = item.text
-                    if body.isEmpty {
-                        if item.media.contains(where: { $0 is TelegramMediaAction }) {
-                            body = isRu ? "[служебное сообщение]" : "[service message]"
-                        } else if !item.media.isEmpty {
-                            body = isRu ? "[медиа]" : "[media]"
+                    var mediaLabel: String?
+                    for media in item.media {
+                        if media is TelegramMediaAction {
+                            mediaLabel = isRu ? "[служебное сообщение]" : "[service message]"
+                        } else if media is TelegramMediaImage {
+                            mediaLabel = isRu ? "[фото]" : "[photo]"
+                        } else if let file = media as? TelegramMediaFile {
+                            if file.isVoice {
+                                mediaLabel = isRu ? "[голосовое]" : "[voice]"
+                            } else if file.isInstantVideo {
+                                mediaLabel = isRu ? "[кружок]" : "[video message]"
+                            } else if file.isSticker || file.isAnimatedSticker {
+                                mediaLabel = isRu ? "[стикер]" : "[sticker]"
+                            } else if file.isVideo {
+                                mediaLabel = isRu ? "[видео]" : "[video]"
+                            } else {
+                                mediaLabel = "[" + (file.fileName ?? (isRu ? "файл" : "file")) + "]"
+                            }
+                        } else if mediaLabel == nil {
+                            mediaLabel = isRu ? "[медиа]" : "[media]"
                         }
-                    } else if !item.media.isEmpty {
-                        body = (isRu ? "[медиа] " : "[media] ") + body
+                    }
+                    var body = item.text
+                    if let mediaLabel {
+                        body = body.isEmpty ? mediaLabel : mediaLabel + " " + body
                     }
                     var line = "[" + formatter.string(from: Date(timeIntervalSince1970: Double(item.timestamp))) + "] " + author + ": " + body
                     if item.sgDeletedDate != nil {
