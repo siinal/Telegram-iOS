@@ -1,0 +1,142 @@
+name: Build unsigned IPA
+
+# Собирает неподписанный .ipa для установки через Sideloadly / AltStore.
+# Нужны секреты репозитория: TELEGRAM_API_ID и TELEGRAM_API_HASH (с my.telegram.org).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+    paths:
+      - '.github/workflows/ios-build.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ios-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: xcode-27
+    timeout-minutes: 360
+
+    steps:
+      - name: Check secrets
+        env:
+          API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+        run: |
+          if [ -z "$API_ID" ] || [ -z "$API_HASH" ]; then
+            echo "::error::Добавь секреты TELEGRAM_API_ID и TELEGRAM_API_HASH: Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+
+      - name: Free disk space
+        run: |
+          df -h /
+          # удаляем лишние версии Xcode (нужна 27.1), симлинки не трогаем
+          for x in /Applications/Xcode_*.app; do
+            [ -L "$x" ] && continue
+            case "$x" in
+              */Xcode_27.1.app) ;;
+              *) sudo rm -rf "$x" ;;
+            esac
+          done
+          sudo rm -rf ~/Library/Android /usr/local/share/dotnet /usr/local/lib/node_modules || true
+          df -h /
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Select Xcode
+        run: |
+          XCODE_VERSION=$(python3 -c 'import json;print(json.load(open("versions.json"))["xcode"])')
+          echo "Xcode from versions.json: $XCODE_VERSION"
+          if [ -d "/Applications/Xcode_$XCODE_VERSION.app" ]; then
+            sudo xcode-select -s "/Applications/Xcode_$XCODE_VERSION.app/Contents/Developer"
+          else
+            echo "::warning::Xcode $XCODE_VERSION не найден, используется Xcode по умолчанию"
+            echo "OVERRIDE_XCODE=--overrideXcodeVersion" >> "$GITHUB_ENV"
+          fi
+          xcodebuild -version
+
+      - name: Create canonical source directory
+        run: |
+          sudo mkdir -p /Users/Shared
+          sudo chown "$(whoami)" /Users/Shared
+          cp -R "$GITHUB_WORKSPACE" /Users/Shared/telegram-ios
+
+      - name: Write build configuration
+        env:
+          API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+        run: |
+          cd /Users/Shared/telegram-ios
+          python3 - <<'EOF'
+          import json, os
+          src = "build-system/appstore-configuration.json"
+          cfg = json.load(open(src))
+          cfg["api_id"] = os.environ["API_ID"].strip()
+          cfg["api_hash"] = os.environ["API_HASH"].strip()
+          cfg["is_internal_build"] = "true"
+          cfg["is_appstore_build"] = "false"
+          cfg.setdefault("sg_config", "")
+          json.dump(cfg, open("build-system/ci-configuration.json", "w"), indent=2)
+          print({k: v for k, v in cfg.items() if k not in ("api_id", "api_hash")})
+          EOF
+
+      - name: Build
+        run: |
+          set -x
+          cd /Users/Shared/telegram-ios
+
+          BUILD_NUMBER_OFFSET="$(cat build_number_offset 2>/dev/null || echo 0)"
+          APP_VERSION=$(python3 -c 'import json;print(json.load(open("versions.json"))["app"])')
+          BUILD_NUMBER="$(( $(git rev-list --count HEAD) + BUILD_NUMBER_OFFSET ))"
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
+          echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
+
+          python3 build-system/Make/ImportCertificates.py --path build-system/fake-codesigning/certs
+
+          python3 -u build-system/Make/Make.py \
+            --bazelUserRoot="/private/var/tmp/_bazel_containerhost" \
+            $OVERRIDE_XCODE \
+            build \
+            --configurationPath="build-system/ci-configuration.json" \
+            --codesigningInformationPath=build-system/fake-codesigning \
+            --configuration=release_arm64 \
+            --buildNumber="$BUILD_NUMBER" \
+            --outputBuildArtifactsPath="build/artifacts"
+
+      - name: Collect IPA
+        run: |
+          cd /Users/Shared/telegram-ios
+          mkdir -p build/artifacts out
+          # Make.py кладёт ipa в build/artifacts; на всякий случай ищем и в bazel-out
+          IPA=$(find build/artifacts -maxdepth 2 -name '*.ipa' | head -1)
+          if [ -z "$IPA" ]; then
+            IPA=$(find -L bazel-out -path '*applebin_ios*' -name '*.ipa' 2>/dev/null | head -1)
+          fi
+          if [ -z "$IPA" ]; then echo "::error::IPA не найден"; exit 1; fi
+          cp "$IPA" "out/Swiftgram-$APP_VERSION-$BUILD_NUMBER-unsigned.ipa"
+          if [ -d build/artifacts/DSYMs ]; then (cd build/artifacts && zip -qr ../../out/DSYMs.zip DSYMs) || true; fi
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Swiftgram-${{ env.APP_VERSION }}-${{ env.BUILD_NUMBER }}
+          path: /Users/Shared/telegram-ios/out/*.ipa
+          retention-days: 30
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ env.BUILD_NUMBER }}
+          name: Swiftgram ${{ env.APP_VERSION }} (${{ env.BUILD_NUMBER }}) unsigned
+          body: |
+            Неподписанная сборка для установки через Sideloadly или AltStore.
+          files: /Users/Shared/telegram-ios/out/*
