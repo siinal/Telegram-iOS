@@ -224,6 +224,7 @@ public class SGSimpleSettings {
         case hideSimilarChannels
         case saveExcludedPeerIds
         case filterZalgo
+        case disableCustomBackgrounds
     }
     
     public enum DownloadSpeedBoostValues: String, CaseIterable {
@@ -420,6 +421,7 @@ public class SGSimpleSettings {
         Keys.hideSimilarChannels.rawValue: false,
         Keys.saveExcludedPeerIds.rawValue: [],
         Keys.filterZalgo.rawValue: true,
+        Keys.disableCustomBackgrounds.rawValue: false,
     ]
     
     public static let groupDefaultValues: [String: Any] = [
@@ -844,6 +846,9 @@ public class SGSimpleSettings {
 
     @UserDefault(key: Keys.filterZalgo.rawValue)
     public var filterZalgo: Bool
+
+    @UserDefault(key: Keys.disableCustomBackgrounds.rawValue)
+    public var disableCustomBackgrounds: Bool
 }
 
 // MARK: Ghost mode

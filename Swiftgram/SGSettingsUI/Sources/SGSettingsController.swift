@@ -142,6 +142,7 @@ private enum SGBoolSetting: String {
     case disableOpenLinkWarning
     case hideSimilarChannels
     case filterZalgo
+    case disableCustomBackgrounds
 }
 
 private enum SGOneFromManySetting: String {
@@ -284,6 +285,7 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .removeLinkTracking, value: SGSimpleSettings.shared.removeLinkTracking, text: ghostText("Убирать слежку из ссылок", "Remove Link Tracking"), enabled: true))
     entries.append(.notice(id: id.count, section: .linkPrivacy, text: ghostText("Из отправляемых ссылок удаляются параметры отслеживания: utm_*, fbclid, gclid, si и другие.", "Tracking parameters such as utm_*, fbclid, gclid and si are removed from links you send.")))
     entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .disableOpenLinkWarning, value: SGSimpleSettings.shared.disableOpenLinkWarning, text: ghostText("Открывать скрытые ссылки без вопроса", "Open Hidden Links Without Asking"), enabled: true))
+    entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .disableCustomBackgrounds, value: SGSimpleSettings.shared.disableCustomBackgrounds, text: ghostText("Не показывать темы и фоны собеседника", "Ignore Chat Themes and Wallpapers"), enabled: true))
     entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .hideSimilarChannels, value: SGSimpleSettings.shared.hideSimilarChannels, text: ghostText("Скрывать «Похожие каналы»", "Hide Similar Channels"), enabled: true))
     entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .hideSponsoredMessages, value: SGSimpleSettings.shared.hideSponsoredMessages, text: ghostText("Скрывать рекламу в каналах", "Hide Sponsored Messages"), enabled: true))
     entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .streamerMode, value: SGSimpleSettings.shared.streamerMode, text: ghostText("Режим стримера", "Streamer Mode"), enabled: true))
@@ -605,6 +607,8 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
             SGSimpleSettings.shared.hideSimilarChannels = value
         case .filterZalgo:
             SGSimpleSettings.shared.filterZalgo = value
+        case .disableCustomBackgrounds:
+            SGSimpleSettings.shared.disableCustomBackgrounds = value
         case .showProfileId:
             SGSimpleSettings.shared.showProfileId = value
         case .warnOnStoriesOpen:

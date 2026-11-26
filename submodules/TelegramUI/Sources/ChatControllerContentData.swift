@@ -2391,6 +2391,11 @@ extension ChatControllerImpl {
                             chatWallpaper = cachedData.wallpaper
                         }
                         
+                        // MARK: Swiftgram: ignore chat themes and wallpapers set by the other side
+                        if SGSimpleSettings.shared.disableCustomBackgrounds {
+                            chatTheme = nil
+                            chatWallpaper = nil
+                        }
                         strongSelf.chatThemePromise.set(.single(chatTheme))
                         strongSelf.chatWallpaperPromise.set(.single(chatWallpaper))
                     }
