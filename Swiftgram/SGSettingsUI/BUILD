@@ -20,6 +20,7 @@ swift_library(
         "//Swiftgram/SGLogging:SGLogging",
         "//Swiftgram/SGSimpleSettings:SGSimpleSettings",
         "//Swiftgram/SGStrings:SGStrings",
+        "//Swiftgram/SGSwiftUI:SGSwiftUI",
 #        "//Swiftgram/SGAPI:SGAPI",
         "//Swiftgram/SGAPIToken:SGAPIToken",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",

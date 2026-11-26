@@ -327,6 +327,12 @@ public final class AccountContextImpl: AccountContext {
         self.isFrozen = false
         
         self.downloadedMediaStoreManager = DownloadedMediaStoreManagerImpl(postbox: account.postbox, accountManager: sharedContext.accountManager)
+        // MARK: Swiftgram message filters
+        if !temp && SGSimpleSettings.shared.filterEnabled && SGSimpleSettings.shared.filterHideBlocked {
+            Queue.mainQueue().async {
+                SGBlockedPeers.shared.start(account: account)
+            }
+        }
         
         if let locationManager = self.sharedContextImpl.locationManager {
             self.liveLocationManager = LiveLocationManagerImpl(engine: self.engine, locationManager: locationManager, inForeground: sharedContext.applicationBindings.applicationInForeground)

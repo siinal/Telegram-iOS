@@ -30,6 +30,8 @@ private enum SGControllerSection: Int32, SGItemListSection {
     case content
     case ghost
     case savedMessages
+    case filters
+    case linkPrivacy
     case tabs
     case folders
     case chatList
@@ -118,9 +120,14 @@ private enum SGBoolSetting: String {
     case ghostDontSendUploadProgress
     case ghostSendOfflineAfterOnline
     case ghostMarkReadAfterSend
+    case ghostShowToggleInChatList
     case saveDeletedMessages
     case saveEditHistory
     case saveDeletedForBots
+    case filterEnabled
+    case filterHideBlocked
+    case filterInPrivateChats
+    case removeLinkTracking
 }
 
 private enum SGOneFromManySetting: String {
@@ -142,6 +149,7 @@ private enum SGSliderSetting: String {
 private enum SGDisclosureLink: String {
     case contentSettings
     case languageSettings
+    case filterPatterns
 }
 
 private struct PeerNameColorScreenState: Equatable {
@@ -198,6 +206,7 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostDontSendUploadProgress, value: SGSimpleSettings.shared.ghostDontSendUploadProgress, text: ghostText("Не отправлять статус загрузки", "Don't Send Upload Status"), enabled: ghostOn))
     entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostSendOfflineAfterOnline, value: SGSimpleSettings.shared.ghostSendOfflineAfterOnline, text: ghostText("Уходить в оффлайн после отправки", "Go Offline After Sending"), enabled: ghostOn && SGSimpleSettings.shared.ghostDontSendOnline))
     entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostMarkReadAfterSend, value: SGSimpleSettings.shared.ghostMarkReadAfterSend, text: ghostText("Читать чат после отправки сообщения", "Mark Chat Read After Sending"), enabled: ghostOn && SGSimpleSettings.shared.ghostDontReadMessages))
+    entries.append(.toggle(id: id.count, section: .ghost, settingName: .ghostShowToggleInChatList, value: SGSimpleSettings.shared.ghostShowToggleInChatList, text: ghostText("Кнопка 👻 в списке чатов", "👻 Button in Chat List"), enabled: true))
     entries.append(.notice(id: id.count, section: .ghost, text: ghostText("Отправка сообщения всё равно делает вас «в сети» — так работает сервер Telegram. Использование может нарушать правила Telegram.", "Sending a message still shows you online, this is how Telegram servers work. Using this may violate Telegram's Terms of Service.")))
 
     // MARK: Saved deleted and edited messages
@@ -206,6 +215,20 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.toggle(id: id.count, section: .savedMessages, settingName: .saveEditHistory, value: SGSimpleSettings.shared.saveEditHistory, text: ghostText("Сохранять историю изменений", "Save Edit History"), enabled: true))
     entries.append(.toggle(id: id.count, section: .savedMessages, settingName: .saveDeletedForBots, value: SGSimpleSettings.shared.saveDeletedForBots, text: ghostText("Сохранять в чатах с ботами", "Save in Bot Chats"), enabled: SGSimpleSettings.shared.saveDeletedMessages))
     entries.append(.notice(id: id.count, section: .savedMessages, text: ghostText("Удалённые собеседником сообщения остаются на этом устройстве с пометкой «удалено». История изменений открывается долгим нажатием на сообщение.", "Messages deleted by others stay on this device marked as deleted. Long-press a message to see its edit history.")))
+
+    // MARK: Message filters
+    let filterOn = SGSimpleSettings.shared.filterEnabled
+    entries.append(.header(id: id.count, section: .filters, text: ghostText("ФИЛЬТРЫ СООБЩЕНИЙ", "MESSAGE FILTERS"), badge: nil))
+    entries.append(.toggle(id: id.count, section: .filters, settingName: .filterEnabled, value: filterOn, text: ghostText("Фильтровать сообщения", "Filter Messages"), enabled: true))
+    entries.append(.disclosure(id: id.count, section: .filters, link: .filterPatterns, text: ghostText("Шаблоны (\(SGSimpleSettings.shared.filterPatterns.count))", "Patterns (\(SGSimpleSettings.shared.filterPatterns.count))")))
+    entries.append(.toggle(id: id.count, section: .filters, settingName: .filterHideBlocked, value: SGSimpleSettings.shared.filterHideBlocked, text: ghostText("Скрывать заблокированных в группах", "Hide Blocked Users in Groups"), enabled: filterOn))
+    entries.append(.toggle(id: id.count, section: .filters, settingName: .filterInPrivateChats, value: SGSimpleSettings.shared.filterInPrivateChats, text: ghostText("Применять в личных чатах", "Apply in Private Chats"), enabled: filterOn))
+    entries.append(.notice(id: id.count, section: .filters, text: ghostText("Подходящие под шаблоны сообщения не показываются в чатах. Они не удаляются и снова появятся, если выключить фильтр.", "Messages matching the patterns are not shown in chats. They are not deleted and come back when the filter is off.")))
+
+    // MARK: Link privacy
+    entries.append(.header(id: id.count, section: .linkPrivacy, text: ghostText("ССЫЛКИ", "LINKS"), badge: nil))
+    entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .removeLinkTracking, value: SGSimpleSettings.shared.removeLinkTracking, text: ghostText("Убирать слежку из ссылок", "Remove Link Tracking"), enabled: true))
+    entries.append(.notice(id: id.count, section: .linkPrivacy, text: ghostText("Из отправляемых ссылок удаляются параметры отслеживания: utm_*, fbclid, gclid, si и другие.", "Tracking parameters such as utm_*, fbclid, gclid and si are removed from links you send.")))
 
     entries.append(.header(id: id.count, section: .tabs, text: i18n("Settings.Tabs.Header", lang), badge: nil))
     entries.append(.toggle(id: id.count, section: .tabs, settingName: .hideTabBar, value: SGSimpleSettings.shared.hideTabBar, text: i18n("Settings.Tabs.HideTabBar", lang), enabled: true))
@@ -446,12 +469,15 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
             SGSimpleSettings.shared.hideStories = value
         case .ghostMode:
             SGSimpleSettings.shared.ghostMode = value
+            simplePromise.set(true)
         case .ghostDontReadMessages:
             SGSimpleSettings.shared.ghostDontReadMessages = value
+            simplePromise.set(true)
         case .ghostDontReadStories:
             SGSimpleSettings.shared.ghostDontReadStories = value
         case .ghostDontSendOnline:
             SGSimpleSettings.shared.ghostDontSendOnline = value
+            simplePromise.set(true)
         case .ghostDontSendTyping:
             SGSimpleSettings.shared.ghostDontSendTyping = value
         case .ghostDontSendUploadProgress:
@@ -460,12 +486,30 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
             SGSimpleSettings.shared.ghostSendOfflineAfterOnline = value
         case .ghostMarkReadAfterSend:
             SGSimpleSettings.shared.ghostMarkReadAfterSend = value
+        case .ghostShowToggleInChatList:
+            SGSimpleSettings.shared.ghostShowToggleInChatList = value
         case .saveDeletedMessages:
             SGSimpleSettings.shared.saveDeletedMessages = value
+            simplePromise.set(true)
         case .saveEditHistory:
             SGSimpleSettings.shared.saveEditHistory = value
         case .saveDeletedForBots:
             SGSimpleSettings.shared.saveDeletedForBots = value
+        case .filterEnabled:
+            SGSimpleSettings.shared.filterEnabled = value
+            simplePromise.set(true)
+            if value && SGSimpleSettings.shared.filterHideBlocked {
+                SGBlockedPeers.shared.start(account: context.account)
+            }
+        case .filterHideBlocked:
+            SGSimpleSettings.shared.filterHideBlocked = value
+            if value && SGSimpleSettings.shared.filterEnabled {
+                SGBlockedPeers.shared.start(account: context.account)
+            }
+        case .filterInPrivateChats:
+            SGSimpleSettings.shared.filterInPrivateChats = value
+        case .removeLinkTracking:
+            SGSimpleSettings.shared.removeLinkTracking = value
         case .showProfileId:
             SGSimpleSettings.shared.showProfileId = value
         case .warnOnStoriesOpen:
@@ -748,6 +792,8 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
         switch (link) {
             case .languageSettings:
                 pushControllerImpl?(context.sharedContext.makeLocalizationListController(context: context))
+            case .filterPatterns:
+                pushControllerImpl?(sgFilterPatternsController(context: context))
             case .contentSettings:
                 let _ = (getSGSettingsURL(context: context) |> deliverOnMainQueue).start(next: { [weak context] url in
                     guard let strongContext = context else {

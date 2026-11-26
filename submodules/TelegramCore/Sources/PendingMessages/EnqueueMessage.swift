@@ -759,6 +759,8 @@ private func opportunisticallyTransformOutgoingMedia(network: Network, postbox: 
 }
 
 public func enqueueMessages(account: Account, peerId: PeerId, messages: [EnqueueMessage]) -> Signal<[MessageId?], NoError> {
+    // MARK: Swiftgram link tracking removal
+    let messages = messages.map { sgCleanTrackingLinks($0) }
     let signal: Signal<[(Bool, EnqueueMessage)], NoError>
     if let transformOutgoingMessageMedia = account.transformOutgoingMessageMedia {
         signal = opportunisticallyTransformOutgoingMedia(network: account.network, postbox: account.postbox, transformOutgoingMessageMedia: transformOutgoingMessageMedia, messages: messages, userInteractive: true)

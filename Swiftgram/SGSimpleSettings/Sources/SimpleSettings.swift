@@ -196,6 +196,11 @@ public class SGSimpleSettings {
         case saveDeletedMessages
         case saveEditHistory
         case saveDeletedForBots
+        case filterEnabled
+        case filterPatterns
+        case filterHideBlocked
+        case filterInPrivateChats
+        case removeLinkTracking
     }
     
     public enum DownloadSpeedBoostValues: String, CaseIterable {
@@ -364,6 +369,11 @@ public class SGSimpleSettings {
         Keys.saveDeletedMessages.rawValue: true,
         Keys.saveEditHistory.rawValue: true,
         Keys.saveDeletedForBots.rawValue: false,
+        Keys.filterEnabled.rawValue: false,
+        Keys.filterPatterns.rawValue: [],
+        Keys.filterHideBlocked.rawValue: true,
+        Keys.filterInPrivateChats.rawValue: false,
+        Keys.removeLinkTracking.rawValue: true,
     ]
     
     public static let groupDefaultValues: [String: Any] = [
@@ -702,6 +712,21 @@ public class SGSimpleSettings {
 
     @UserDefault(key: Keys.saveDeletedForBots.rawValue)
     public var saveDeletedForBots: Bool
+
+    @UserDefault(key: Keys.filterEnabled.rawValue)
+    public var filterEnabled: Bool
+
+    @UserDefault(key: Keys.filterPatterns.rawValue)
+    public var filterPatterns: [String]
+
+    @UserDefault(key: Keys.filterHideBlocked.rawValue)
+    public var filterHideBlocked: Bool
+
+    @UserDefault(key: Keys.filterInPrivateChats.rawValue)
+    public var filterInPrivateChats: Bool
+
+    @UserDefault(key: Keys.removeLinkTracking.rawValue)
+    public var removeLinkTracking: Bool
 }
 
 // MARK: Ghost mode

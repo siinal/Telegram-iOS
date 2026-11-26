@@ -7882,6 +7882,10 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
     
     override public func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        // MARK: Swiftgram message filters
+        if SGSimpleSettings.shared.filterEnabled && SGSimpleSettings.shared.filterHideBlocked {
+            SGBlockedPeers.shared.start(account: self.context.account)
+        }
         self.forwardSideListAppearance(.willAppear, animated: animated)
 
         self.walletTransferAnimationsVisible = true

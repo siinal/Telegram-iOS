@@ -6982,6 +6982,7 @@ private final class ChatListLocationContext {
     var leftButton: NavigationBarComponent.Button?
     var rightButton: NavigationBarComponent.Button?
     var settingsButton: NavigationBarComponent.Button? // MARK: Swiftgram
+    var sgGhostButton: NavigationBarComponent.Button? // MARK: Swiftgram ghost mode
     var proxyButton: NavigationBarComponent.Button?
     var storyButton: NavigationBarComponent.Button?
     
@@ -6990,6 +6991,9 @@ private final class ChatListLocationContext {
         // MARK: Swiftgram
         if let settingsButton = self.settingsButton {
             result.append(settingsButton)
+        }
+        if let sgGhostButton = self.sgGhostButton {
+            result.append(sgGhostButton)
         }
         //
         if let rightButton = self.rightButton {
@@ -7568,6 +7572,7 @@ private final class ChatListLocationContext {
                 } else {
                     self.settingsButton = nil
                 }
+                self.sgUpdateGhostButton()
                 //
                 
             } else {
@@ -7685,6 +7690,26 @@ private final class ChatListLocationContext {
             }
             self.parentController?.maybeDisplayStoryTooltip()
         })
+    }
+    
+    // MARK: Swiftgram ghost mode
+    private func sgUpdateGhostButton() {
+        guard SGSimpleSettings.shared.ghostShowToggleInChatList else {
+            self.sgGhostButton = nil
+            return
+        }
+        let isOn = SGSimpleSettings.shared.ghostMode
+        self.sgGhostButton = NavigationBarComponent.Button(id: isOn ? "sg_ghost_on" : "sg_ghost_off",
+            content: .text(title: isOn ? "👻" : "👀", isBold: false),
+            action: { [weak self] _ in
+                guard let self else {
+                    return
+                }
+                SGSimpleSettings.shared.ghostMode = !SGSimpleSettings.shared.ghostMode
+                self.sgUpdateGhostButton()
+                self.parentController?.requestLayout(transition: .animated(duration: 0.2, curve: .easeInOut))
+            }
+        )
     }
     
     private func updateForum(

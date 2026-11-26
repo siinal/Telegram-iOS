@@ -181,6 +181,10 @@ func chatHistoryEntriesForView(
         if pendingRemovedMessages.contains(message.id) {
             continue
         }
+        // MARK: Swiftgram message filters
+        if sgIsMessageFiltered(message, accountPeerId: context.account.peerId) {
+            continue
+        }
         
         if case let .replyThread(replyThreadMessage) = location, replyThreadMessage.isForumPost {
             if isUndisplayedForumTopicRoot(message, location: location, additionalData: view.additionalData) {

@@ -1,0 +1,126 @@
+import Foundation
+import Postbox
+import SwiftSignalKit
+import SGSimpleSettings
+
+// MARK: Swiftgram message filters
+
+private final class SGCompiledFilters {
+    let patterns: [String]
+    let expressions: [NSRegularExpression]
+
+    init(patterns: [String]) {
+        self.patterns = patterns
+        var expressions: [NSRegularExpression] = []
+        for pattern in patterns {
+            if let expression = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) {
+                expressions.append(expression)
+            }
+        }
+        self.expressions = expressions
+    }
+}
+
+private let sgCompiledFilters = Atomic<SGCompiledFilters?>(value: nil)
+
+private func sgCurrentFilterExpressions() -> [NSRegularExpression] {
+    let patterns = SGSimpleSettings.shared.filterPatterns
+    return sgCompiledFilters.modify { current in
+        if let current, current.patterns == patterns {
+            return current
+        }
+        return SGCompiledFilters(patterns: patterns)
+    }?.expressions ?? []
+}
+
+/// Checks a regular expression the way the filters use it. Returns an error description for an invalid one.
+public func sgValidateFilterPattern(_ pattern: String) -> String? {
+    do {
+        let _ = try NSRegularExpression(pattern: pattern, options: [.caseInsensitive])
+        return nil
+    } catch {
+        return error.localizedDescription
+    }
+}
+
+/// Blocked peers of each account, loaded from the server once per launch and kept up to date while it runs.
+public final class SGBlockedPeers {
+    public static let shared = SGBlockedPeers()
+
+    private let ids = Atomic<[PeerId: Set<PeerId>]>(value: [:])
+    private var contexts: [PeerId: BlockedPeersContext] = [:]
+    private var disposables: [PeerId: Disposable] = [:]
+
+    private init() {
+    }
+
+    /// Main queue only.
+    public func start(account: Account) {
+        let accountPeerId = account.peerId
+        if self.contexts[accountPeerId] != nil {
+            return
+        }
+        let context = BlockedPeersContext(account: account, subject: .blocked)
+        self.contexts[accountPeerId] = context
+        var pageRequests = 0
+        self.disposables[accountPeerId] = (context.state
+        |> deliverOnMainQueue).start(next: { [weak self, weak context] state in
+            guard let self else {
+                return
+            }
+            let peerIds = Set(state.peers.map { $0.peerId })
+            let _ = self.ids.modify { current in
+                var current = current
+                current[accountPeerId] = peerIds
+                return current
+            }
+            if state.canLoadMore && !state.isLoadingMore && pageRequests < 50 {
+                pageRequests += 1
+                DispatchQueue.main.async {
+                    context?.loadMore()
+                }
+            }
+        })
+    }
+
+    public func isBlocked(accountPeerId: PeerId, peerId: PeerId) -> Bool {
+        return self.ids.with { $0[accountPeerId]?.contains(peerId) ?? false }
+    }
+}
+
+/// Whether an incoming message is hidden from the chat by the filters.
+public func sgIsMessageFiltered(_ message: Message, accountPeerId: PeerId) -> Bool {
+    let settings = SGSimpleSettings.shared
+    guard settings.filterEnabled else {
+        return false
+    }
+    if !message.flags.contains(.Incoming) || message.id.peerId == accountPeerId {
+        return false
+    }
+    if message.media.contains(where: { $0 is TelegramMediaAction }) {
+        return false
+    }
+    let isPrivateChat = message.id.peerId.namespace == Namespaces.Peer.CloudUser || message.id.peerId.namespace == Namespaces.Peer.SecretChat
+    if isPrivateChat && !settings.filterInPrivateChats {
+        return false
+    }
+    if settings.filterHideBlocked, !isPrivateChat, let authorId = message.author?.id, authorId != accountPeerId {
+        if SGBlockedPeers.shared.isBlocked(accountPeerId: accountPeerId, peerId: authorId) {
+            return true
+        }
+    }
+    if message.text.isEmpty {
+        return false
+    }
+    let expressions = sgCurrentFilterExpressions()
+    if expressions.isEmpty {
+        return false
+    }
+    let range = NSRange(location: 0, length: (message.text as NSString).length)
+    for expression in expressions {
+        if expression.firstMatch(in: message.text, options: [], range: range) != nil {
+            return true
+        }
+    }
+    return false
+}
