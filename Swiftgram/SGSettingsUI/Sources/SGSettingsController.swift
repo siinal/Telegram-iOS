@@ -22,6 +22,7 @@ import AppBundle
 import WebKit
 import PeerNameColorScreen
 import UndoUI
+import LocalAuthentication
 
 
 private enum SGControllerSection: Int32, SGItemListSection {
@@ -165,6 +166,7 @@ private enum SGDisclosureLink: String {
     case calculator
     case settingsBackup
     case allDeletedMessages
+    case hiddenChats
 }
 
 private struct PeerNameColorScreenState: Equatable {
@@ -258,6 +260,7 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
 
     // MARK: Link privacy
     entries.append(.header(id: id.count, section: .linkPrivacy, text: ghostText("ПРИВАТНОСТЬ", "PRIVACY"), badge: nil))
+    entries.append(.disclosure(id: id.count, section: .linkPrivacy, link: .hiddenChats, text: ghostText("Скрытые чаты (" + String(SGSimpleSettings.shared.hiddenChatPeerIds.count) + ")", "Hidden Chats (" + String(SGSimpleSettings.shared.hiddenChatPeerIds.count) + ")")))
     entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .removeLinkTracking, value: SGSimpleSettings.shared.removeLinkTracking, text: ghostText("Убирать слежку из ссылок", "Remove Link Tracking"), enabled: true))
     entries.append(.notice(id: id.count, section: .linkPrivacy, text: ghostText("Из отправляемых ссылок удаляются параметры отслеживания: utm_*, fbclid, gclid, si и другие.", "Tracking parameters such as utm_*, fbclid, gclid and si are removed from links you send.")))
     entries.append(.toggle(id: id.count, section: .linkPrivacy, settingName: .hideSponsoredMessages, value: SGSimpleSettings.shared.hideSponsoredMessages, text: ghostText("Скрывать рекламу в каналах", "Hide Sponsored Messages"), enabled: true))
@@ -873,6 +876,22 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
                 pushControllerImpl?(sgAIServiceController(context: context))
             case .calculator:
                 pushControllerImpl?(sgCalculatorController(context: context))
+            case .hiddenChats:
+                let lang = context.sharedContext.currentPresentationData.with { $0 }.strings.baseLanguageCode
+                let isRu = lang == "ru" || lang == "uk" || lang == "be"
+                let authContext = LAContext()
+                var authError: NSError?
+                if authContext.canEvaluatePolicy(.deviceOwnerAuthentication, error: &authError) {
+                    authContext.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: isRu ? "Открыть скрытые чаты" : "Open hidden chats", reply: { success, _ in
+                        DispatchQueue.main.async {
+                            if success {
+                                pushControllerImpl?(sgHiddenChatsController(context: context))
+                            }
+                        }
+                    })
+                } else {
+                    pushControllerImpl?(sgHiddenChatsController(context: context))
+                }
             case .allDeletedMessages:
                 pushControllerImpl?(sgAllDeletedMessagesController(context: context))
             case .settingsBackup:

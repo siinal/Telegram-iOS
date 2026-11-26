@@ -112,6 +112,7 @@ enum SGContextMenuActionFactory {
     case calculate(controllerInteraction: ChatControllerInteraction, context: AccountContext)
     case copyIds(context: AccountContext)
     case exportChat(context: AccountContext)
+    case hideChat(context: AccountContext)
     case clearDeleted(context: AccountContext)
 }
 
@@ -315,6 +316,25 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
         }, action: { _, f in
             f(.default)
             sgSetShadowBanned(authorId, !isBanned)
+        }))
+    case let .hideChat(context):
+        let lang = chatPresentationInterfaceState.strings.baseLanguageCode
+        let isRu = lang == "ru" || lang == "uk" || lang == "be"
+        let peerId = message.id.peerId
+        let isHidden = sgIsHiddenChat(peerId)
+        return .action(ContextMenuActionItem(text: isHidden ? (isRu ? "Вернуть чат в список" : "Unhide This Chat") : (isRu ? "Скрыть этот чат" : "Hide This Chat"), icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: isHidden ? "Chat/Context Menu/Eye" : "Chat/Context Menu/EyeLocked"), color: theme.actionSheet.primaryTextColor)
+        }, action: { _, f in
+            f(.default)
+            sgSetHiddenChat(peerId, !isHidden)
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            let text: String
+            if isHidden {
+                text = isRu ? "Чат снова в списке чатов" : "The chat is back in the chat list"
+            } else {
+                text = isRu ? "Чат скрыт. Найти его: Настройки → Swiftgram → Скрытые чаты" : "Chat hidden. Find it in Settings → Swiftgram → Hidden Chats"
+            }
+            context.sharedContext.presentGlobalController(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: text, timeout: nil, customUndoText: nil), elevatedLayout: false, action: { _ in return false }), nil)
         }))
     case let .exportChat(context):
         let lang = chatPresentationInterfaceState.strings.baseLanguageCode

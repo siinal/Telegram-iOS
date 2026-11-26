@@ -573,3 +573,100 @@ public func sgAllDeletedMessagesController(context: AccountContext) -> ViewContr
     })
     return controller
 }
+
+// MARK: Hidden chats
+
+private final class SGHiddenChatsModel: ObservableObject {
+    struct Item: Identifiable {
+        let id: EnginePeer.Id
+        let title: String
+        let peer: EnginePeer?
+    }
+
+    @Published var items: [Item] = []
+    @Published var isLoading: Bool = true
+
+    func load(context: AccountContext) {
+        let ids = sgHiddenChatPeerIds()
+        if ids.isEmpty {
+            self.items = []
+            self.isLoading = false
+            return
+        }
+        let _ = (context.engine.data.get(EngineDataMap(ids.map(TelegramEngine.EngineData.Item.Peer.Peer.init(id:))))
+        |> deliverOnMainQueue).start(next: { [weak self] peers in
+            guard let self else {
+                return
+            }
+            var items: [Item] = []
+            for id in ids {
+                let peer: EnginePeer? = peers[id] ?? nil
+                items.append(Item(id: id, title: peer?.debugDisplayTitle ?? String(id.toInt64()), peer: peer))
+            }
+            self.items = items
+            self.isLoading = false
+        })
+    }
+}
+
+private struct SGHiddenChatsView: View {
+    @Environment(\.lang) var lang: String
+    @ObservedObject var model: SGHiddenChatsModel
+    let open: (EnginePeer) -> Void
+    let unhide: (EnginePeer.Id) -> Void
+
+    var body: some View {
+        List {
+            Section(footer: Text(sgToolsText(lang, "Скрытые чаты не показываются в списке чатов. Чтобы скрыть чат: долгое нажатие на сообщение в нём → Swiftgram → «Скрыть этот чат». Уведомления из них по-прежнему приходят — отключи их в настройках чата, если нужно. Смахни влево, чтобы вернуть чат в список.", "Hidden chats are not shown in the chat list. To hide a chat: long-press a message in it → Swiftgram → Hide This Chat. Notifications still arrive; mute the chat if needed. Swipe left to return a chat to the list."))) {
+                if model.isLoading {
+                    ProgressView()
+                } else if model.items.isEmpty {
+                    Text(sgToolsText(lang, "Скрытых чатов нет", "No hidden chats"))
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(model.items) { item in
+                        Button(action: {
+                            if let peer = item.peer {
+                                open(peer)
+                            }
+                        }) {
+                            Text(item.title)
+                        }
+                    }
+                    .onDelete { indexSet in
+                        for index in indexSet {
+                            unhide(model.items[index].id)
+                        }
+                        model.items.remove(atOffsets: indexSet)
+                    }
+                }
+            }
+        }
+        .sgNavigationTitle(sgToolsText(lang, "Скрытые чаты", "Hidden Chats"))
+    }
+}
+
+public func sgHiddenChatsController(context: AccountContext) -> ViewController {
+    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+    let model = SGHiddenChatsModel()
+    var navigationControllerImpl: (() -> NavigationController?)?
+    let controller = SGSwiftUIController(
+        title: sgToolsText(presentationData.strings.baseLanguageCode, "Скрытые чаты", "Hidden Chats"),
+        presentationData: presentationData,
+        presentationDataSignal: context.sharedContext.presentationData
+    ) {
+        SGHiddenChatsView(model: model, open: { peer in
+            guard let navigationController = navigationControllerImpl?() else {
+                return
+            }
+            context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(peer)))
+        }, unhide: { peerId in
+            sgSetHiddenChat(peerId, false)
+        })
+    }
+    navigationControllerImpl = { [weak controller] in
+        return controller?.navigationController as? NavigationController
+    }
+    model.load(context: context)
+    return controller
+}

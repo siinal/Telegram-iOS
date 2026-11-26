@@ -1628,6 +1628,9 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         }
         if message.id.namespace == Namespaces.Message.Cloud {
             sgActions.append(sgMakeContextMenuAction(.exportChat(context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+            if message.id.peerId != context.account.peerId {
+                sgActions.append(sgMakeContextMenuAction(.hideChat(context: context), chatPresentationInterfaceState: chatPresentationInterfaceState, message: message))
+            }
         }
         if let messageNode {
             sgActions.append(sgMakeContextMenuAction(.messageShot(context: context, view: { [weak messageNode] in

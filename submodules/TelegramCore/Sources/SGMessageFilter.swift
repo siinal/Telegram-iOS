@@ -180,3 +180,39 @@ public func sgFirstMatchingFilterPattern(_ text: String, patterns: [String]) -> 
     }
     return nil
 }
+
+// MARK: Swiftgram hidden chats
+
+private let sgHiddenChatsCache = Atomic<(raw: [String], ids: Set<Int64>)?>(value: nil)
+
+private func sgHiddenChatIdSet() -> Set<Int64> {
+    let raw = SGSimpleSettings.shared.hiddenChatPeerIds
+    if raw.isEmpty {
+        return []
+    }
+    return sgHiddenChatsCache.modify { current in
+        if let current, current.raw == raw {
+            return current
+        }
+        return (raw: raw, ids: Set(raw.compactMap { Int64($0) }))
+    }?.ids ?? []
+}
+
+/// Whether the chat is hidden from the chat list.
+public func sgIsHiddenChat(_ peerId: PeerId) -> Bool {
+    return sgHiddenChatIdSet().contains(peerId.toInt64())
+}
+
+public func sgSetHiddenChat(_ peerId: PeerId, _ value: Bool) {
+    var raw = SGSimpleSettings.shared.hiddenChatPeerIds
+    let key = String(peerId.toInt64())
+    raw.removeAll(where: { $0 == key })
+    if value {
+        raw.append(key)
+    }
+    SGSimpleSettings.shared.hiddenChatPeerIds = raw
+}
+
+public func sgHiddenChatPeerIds() -> [PeerId] {
+    return SGSimpleSettings.shared.hiddenChatPeerIds.compactMap { Int64($0) }.map { PeerId($0) }
+}
