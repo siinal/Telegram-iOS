@@ -284,8 +284,12 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
             formatter.timeStyle = .short
             let _ = (context.account.postbox.transaction { transaction -> [String] in
                 var result: [String] = []
+                // Bounded scan: the transaction holds the database queue, and big chats have hundreds of thousands
+                // of stored messages.
+                var scanned = 0
                 transaction.withAllMessages(peerId: peerId, reversed: true, { searchMessage in
-                    if result.count >= 1000 {
+                    scanned += 1
+                    if result.count >= 1000 || scanned > 50000 {
                         return false
                     }
                     if let deletedDate = searchMessage.sgDeletedDate {

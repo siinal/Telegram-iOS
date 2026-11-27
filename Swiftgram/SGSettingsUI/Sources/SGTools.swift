@@ -474,6 +474,44 @@ public func sgExportSettingsJSON() -> String? {
     return String(data: data, encoding: .utf8)
 }
 
+private func sgIsBoolNumber(_ value: Any) -> Bool {
+    guard let number = value as? NSNumber else {
+        return false
+    }
+    return CFGetTypeID(number) == CFBooleanGetTypeID()
+}
+
+/// Whether a value read from a backup has the type the setting is stored with.
+private func sgBackupValue(_ value: Any, matchesTypeOf defaultValue: Any) -> Bool {
+    if sgIsBoolNumber(defaultValue) {
+        return sgIsBoolNumber(value)
+    }
+    if defaultValue is String {
+        return value is String
+    }
+    if defaultValue is [Any] {
+        guard let array = value as? [Any] else {
+            return false
+        }
+        return array.allSatisfy { $0 is String }
+    }
+    if let defaultNumber = defaultValue as? NSNumber {
+        guard let number = value as? NSNumber, !sgIsBoolNumber(number) else {
+            return false
+        }
+        let isInteger = CFNumberIsFloatType(defaultNumber) == false
+        if isInteger {
+            let doubleValue = number.doubleValue
+            return doubleValue.rounded() == doubleValue && abs(doubleValue) <= Double(Int32.max)
+        }
+        return true
+    }
+    if defaultValue is Data {
+        return value is Data
+    }
+    return false
+}
+
 /// Applies settings exported by `sgExportSettingsJSON`. Returns how many were applied, or nil when the text is not a backup.
 public func sgImportSettingsJSON(_ text: String) -> Int? {
     guard let data = text.data(using: .utf8), let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any], root["swiftgramSettings"] != nil, let values = root["values"] as? [String: Any] else {
@@ -483,6 +521,10 @@ public func sgImportSettingsJSON(_ text: String) -> Int? {
     var count = 0
     for (key, value) in values {
         if !known.contains(key) || sgBackupExcludedKeys.contains(key) {
+            continue
+        }
+        // The settings wrapper force-casts what it reads, so a value of another type would crash every launch.
+        guard let defaultValue = SGSimpleSettings.defaultValues[key], sgBackupValue(value, matchesTypeOf: defaultValue) else {
             continue
         }
         UserDefaults.standard.set(value, forKey: key)
