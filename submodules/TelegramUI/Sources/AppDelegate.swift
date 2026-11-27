@@ -715,7 +715,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             encryptionProvider: OpenSSLEncryptionProvider(),
             deviceModelName: nil,
             useBetaFeatures: !buildConfig.isAppStoreBuild,
-            isICloudEnabled: buildConfig.isICloudEnabled,
+            isICloudEnabled: buildConfig.isICloudEnabled && sgHasICloudEntitlement(), // MARK: Swiftgram: sideloaded builds have no iCloud
             // Only the main app passes a factory: extensions stay on MtProtoKit. Whether the Rust
             // engine runs is decided per account by resolveNetworkEngine (Debug Settings switch,
             // mtproto_engine_rust_disabled, the factory's own declines).
@@ -3911,21 +3911,38 @@ extension AppDelegate {
 // (extensions cannot share it, but the app itself works).
 private let sgAppGroup: (name: String, url: URL) = sgResolveAppGroup()
 
-private func sgProvisionedAppGroups() -> [String] {
+/// Entitlements of the embedded provisioning profile, or nil when the app carries none.
+private func sgProvisionedEntitlements() -> [String: Any]? {
     guard let path = Bundle.main.path(forResource: "embedded", ofType: "mobileprovision"), let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else {
-        return []
+        return nil
     }
     guard let start = data.range(of: Data("<?xml".utf8)), let end = data.range(of: Data("</plist>".utf8), options: [], in: start.lowerBound ..< data.endIndex) else {
-        return []
+        return nil
     }
     let plistData = data.subdata(in: start.lowerBound ..< end.upperBound)
     guard let object = try? PropertyListSerialization.propertyList(from: plistData, options: [], format: nil) else {
-        return []
+        return nil
     }
-    guard let plist = object as? [String: Any], let entitlements = plist["Entitlements"] as? [String: Any] else {
-        return []
+    guard let plist = object as? [String: Any] else {
+        return nil
     }
-    return (entitlements["com.apple.security.application-groups"] as? [String]) ?? []
+    return plist["Entitlements"] as? [String: Any]
+}
+
+private func sgProvisionedAppGroups() -> [String] {
+    return (sgProvisionedEntitlements()?["com.apple.security.application-groups"] as? [String]) ?? []
+}
+
+/// CloudKit traps when the app is not entitled to iCloud, which is the case for sideloaded installs signed with a
+/// personal team. Use iCloud only when the provisioning profile grants a container.
+private func sgHasICloudEntitlement() -> Bool {
+    guard let entitlements = sgProvisionedEntitlements() else {
+        return false
+    }
+    if let containers = entitlements["com.apple.developer.icloud-container-identifiers"] as? [String], !containers.isEmpty {
+        return true
+    }
+    return false
 }
 
 private func sgResolveAppGroup() -> (name: String, url: URL) {
