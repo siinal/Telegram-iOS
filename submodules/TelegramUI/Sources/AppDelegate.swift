@@ -996,6 +996,11 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
                 }
             })
         }, requestSiriAuthorization: { completion in
+            // MARK: Swiftgram: Intents throws for a process without the Siri entitlement (sideloaded installs)
+            if !sgHasSiriEntitlement() {
+                completion(false)
+                return
+            }
             if #available(iOS 10, *) {
                 INPreferences.requestSiriAuthorization { status in
                     if case .authorized = status {
@@ -1008,7 +1013,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
                 completion(false)
             }
         }, siriAuthorization: {
-            if buildConfig.isSiriEnabled {
+            if buildConfig.isSiriEnabled && sgHasSiriEntitlement() { // MARK: Swiftgram
                 if #available(iOS 10, *) {
                     switch INPreferences.siriAuthorizationStatus() {
                     case .authorized:
@@ -3943,6 +3948,16 @@ private func sgHasICloudEntitlement() -> Bool {
         return true
     }
     return false
+}
+
+/// INPreferences raises an exception when the process lacks the Siri entitlement, which personal-team signing
+/// does not grant. Cached: the profile does not change while the app runs.
+private let sgSiriEntitlementCache: Bool = {
+    return (sgProvisionedEntitlements()?["com.apple.developer.siri"] as? Bool) ?? false
+}()
+
+private func sgHasSiriEntitlement() -> Bool {
+    return sgSiriEntitlementCache
 }
 
 private func sgResolveAppGroup() -> (name: String, url: URL) {
