@@ -324,8 +324,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             return existingSession
         }
         
-        let baseAppBundleId = Bundle.main.bundleIdentifier!
-        let appGroupName = "group.\(baseAppBundleId)"
+        let appGroupName = sgAppGroup.name // MARK: Swiftgram
 
         let configuration = URLSessionConfiguration.background(withIdentifier: identifier)
         configuration.sharedContainerIdentifier = appGroupName
@@ -593,13 +592,13 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
         
         let baseAppBundleId = Bundle.main.bundleIdentifier!
-        let appGroupName = "group.\(baseAppBundleId)"
+        let appGroupName = sgAppGroup.name // MARK: Swiftgram
         NSLog("[SG.Launch] Configuring passcode environment") // MARK: Swiftgram
         try! PasscodeEnvironment.shared.configure(PasscodeConfiguration(appGroupIdentifier: appGroupName, processRole: .mainApp, biometricKeychainService: walletBiometricKeychainService), privateAccessGroup: {
             BuildConfig.keychainAccessGroup(baseAppBundleId: baseAppBundleId)
         })
         NSLog("[SG.Launch] Resolving app-group container") // MARK: Swiftgram
-        let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
+        let maybeAppGroupUrl: URL? = sgAppGroup.url // MARK: Swiftgram: falls back when a sideloader renamed the group
         NSLog("[SG.Launch] App-group container resolved: \(maybeAppGroupUrl != nil)") // MARK: Swiftgram
         
         let buildConfig = BuildConfig(baseAppBundleId: baseAppBundleId)
@@ -3903,3 +3902,46 @@ extension AppDelegate {
     }
 }
 //
+
+// MARK: Swiftgram: app group lookup that survives sideloading
+//
+// Sideloaders sign the app under a different bundle id and register the app group under their own name, so
+// "group.<bundle id>" may not be entitled. Without a container the app used to stop at a black screen. Try the
+// groups listed in the embedded provisioning profile, then fall back to the app's own Application Support folder
+// (extensions cannot share it, but the app itself works).
+private let sgAppGroup: (name: String, url: URL) = sgResolveAppGroup()
+
+private func sgProvisionedAppGroups() -> [String] {
+    guard let path = Bundle.main.path(forResource: "embedded", ofType: "mobileprovision"), let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else {
+        return []
+    }
+    guard let start = data.range(of: Data("<?xml".utf8)), let end = data.range(of: Data("</plist>".utf8), options: [], in: start.lowerBound ..< data.endIndex) else {
+        return []
+    }
+    let plistData = data.subdata(in: start.lowerBound ..< end.upperBound)
+    guard let object = try? PropertyListSerialization.propertyList(from: plistData, options: [], format: nil) else {
+        return []
+    }
+    guard let plist = object as? [String: Any], let entitlements = plist["Entitlements"] as? [String: Any] else {
+        return []
+    }
+    return (entitlements["com.apple.security.application-groups"] as? [String]) ?? []
+}
+
+private func sgResolveAppGroup() -> (name: String, url: URL) {
+    let defaultName = "group." + (Bundle.main.bundleIdentifier ?? "")
+    if let url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: defaultName) {
+        return (defaultName, url)
+    }
+    for name in sgProvisionedAppGroups() {
+        if let url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: name) {
+            NSLog("[SG.Launch] Using provisioned app group \(name)")
+            return (name, url)
+        }
+    }
+    let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+    let url = base.appendingPathComponent("sg-app-group", isDirectory: true)
+    let _ = try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true, attributes: nil)
+    NSLog("[SG.Launch] No app group container, using \(url.path)")
+    return (defaultName, url)
+}
