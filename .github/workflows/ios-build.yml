@@ -160,13 +160,13 @@ jobs:
             IPA=$(find -L bazel-out -path '*applebin_ios*' -name '*.ipa' 2>/dev/null | head -1)
           fi
           if [ -z "$IPA" ]; then echo "::error::IPA не найден"; exit 1; fi
-          cp "$IPA" "out/Swiftgram-$APP_VERSION-$BUILD_NUMBER-unsigned.ipa"
+          cp "$IPA" "out/Pyrogram-$APP_VERSION-$BUILD_NUMBER-unsigned.ipa"
           if [ -d build/artifacts/DSYMs ]; then (cd build/artifacts && zip -qr ../../out/DSYMs.zip DSYMs) || true; fi
           ls -la out
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Swiftgram-${{ env.APP_VERSION }}-${{ env.BUILD_NUMBER }}
+          name: Pyrogram-${{ env.APP_VERSION }}-${{ env.BUILD_NUMBER }}
           path: /Users/Shared/telegram-ios/out/*.ipa
           retention-days: 30
 
@@ -174,7 +174,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ env.BUILD_NUMBER }}
-          name: Swiftgram ${{ env.APP_VERSION }} (${{ env.BUILD_NUMBER }}) unsigned
+          name: Pyrogram ${{ env.APP_VERSION }} (${{ env.BUILD_NUMBER }}) unsigned
           body: |
             Неподписанная сборка для установки через Sideloadly или AltStore.
           files: /Users/Shared/telegram-ios/out/*

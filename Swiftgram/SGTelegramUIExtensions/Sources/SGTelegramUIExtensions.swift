@@ -366,7 +366,7 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
             f(.default)
             sgHideMessage(message.id)
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            context.sharedContext.presentGlobalController(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: isRu ? "Сообщение скрыто у тебя. Вернуть: Настройки → Swiftgram → Фильтры" : "Message hidden for you. Restore in Settings → Swiftgram → Filters", timeout: nil, customUndoText: nil), elevatedLayout: false, action: { _ in return false }), nil)
+            context.sharedContext.presentGlobalController(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: isRu ? "Сообщение скрыто у тебя. Вернуть: Настройки → Pyrogram → Фильтры" : "Message hidden for you. Restore in Settings → Pyrogram → Filters", timeout: nil, customUndoText: nil), elevatedLayout: false, action: { _ in return false }), nil)
         }))
     case let .addToFilter(context):
         let lang = chatPresentationInterfaceState.strings.baseLanguageCode
@@ -494,7 +494,7 @@ func sgMakeContextMenuAction(_ action: SGContextMenuActionFactory, chatPresentat
             if isHidden {
                 text = isRu ? "Чат снова в списке чатов" : "The chat is back in the chat list"
             } else {
-                text = isRu ? "Чат скрыт. Найти его: Настройки → Swiftgram → Скрытые чаты" : "Chat hidden. Find it in Settings → Swiftgram → Hidden Chats"
+                text = isRu ? "Чат скрыт. Найти его: Настройки → Pyrogram → Скрытые чаты" : "Chat hidden. Find it in Settings → Pyrogram → Hidden Chats"
             }
             context.sharedContext.presentGlobalController(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: text, timeout: nil, customUndoText: nil), elevatedLayout: false, action: { _ in return false }), nil)
         }))
@@ -754,7 +754,7 @@ func sgInsertContextMenu(actions: inout [ContextMenuItem], sgActions: inout [Con
     })), at: 0)
     sgActions.insert(.separator, at: 1)
     let sgItems = sgActions
-    let swiftgramSubMenu: ContextMenuItem = .action(ContextMenuActionItem(text: "Swiftgram", icon: { theme in
+    let swiftgramSubMenu: ContextMenuItem = .action(ContextMenuActionItem(text: "Pyrogram", icon: { theme in
         return generateTintedImage(image: UIImage(bundleImageName: "SwiftgramContextMenu"), color: theme.actionSheet.primaryTextColor)
     }, action: { c, _ in
         popSGItems = { [weak c] in

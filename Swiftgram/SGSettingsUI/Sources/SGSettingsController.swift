@@ -277,7 +277,7 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     let hiddenMessagesCount = SGSimpleSettings.shared.hiddenMessageIds.count
     entries.append(.disclosure(id: id.count, section: .filters, link: .clearHiddenMessages, text: ghostText("Вернуть скрытые сообщения (" + String(hiddenMessagesCount) + ")", "Restore Hidden Messages (" + String(hiddenMessagesCount) + ")")))
     entries.append(.disclosure(id: id.count, section: .filters, link: .clearShadowBan, text: ghostText("Очистить теневой бан (" + String(shadowBanCount) + ")", "Clear Shadow Ban (" + String(shadowBanCount) + ")")))
-    entries.append(.notice(id: id.count, section: .filters, text: ghostText("Теневой бан: долгое нажатие на сообщение → Swiftgram → «Скрыть … (тень)», и сообщения этого человека пропадут во всех группах и каналах. Подходящие под шаблоны сообщения не показываются в чатах. Они не удаляются и снова появятся, если выключить фильтр.", "Shadow ban: long-press a message → Swiftgram → Hide … (Shadow Ban) to hide that person in all groups and channels. Messages matching the patterns are not shown in chats. They are not deleted and come back when the filter is off.")))
+    entries.append(.notice(id: id.count, section: .filters, text: ghostText("Теневой бан: долгое нажатие на сообщение → Pyrogram → «Скрыть … (тень)», и сообщения этого человека пропадут во всех группах и каналах. Подходящие под шаблоны сообщения не показываются в чатах. Они не удаляются и снова появятся, если выключить фильтр.", "Shadow ban: long-press a message → Pyrogram → Hide … (Shadow Ban) to hide that person in all groups and channels. Messages matching the patterns are not shown in chats. They are not deleted and come back when the filter is off.")))
 
     // MARK: Link privacy
     entries.append(.header(id: id.count, section: .linkPrivacy, text: ghostText("ПРИВАТНОСТЬ", "PRIVACY"), badge: nil))
@@ -300,7 +300,7 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.disclosure(id: id.count, section: .sgTools, link: .aiService, text: ghostText("ИИ-сервис", "AI Service")))
     entries.append(.disclosure(id: id.count, section: .sgTools, link: .calculator, text: ghostText("Калькулятор", "Calculator")))
     entries.append(.disclosure(id: id.count, section: .sgTools, link: .settingsBackup, text: ghostText("Резервная копия настроек", "Settings Backup")))
-    entries.append(.notice(id: id.count, section: .sgTools, text: ghostText("После настройки в меню Swiftgram у сообщения появятся «ИИ: пересказать» и «ИИ: перевести». «Текст песни» есть в меню любого музыкального файла.", "Once set up, the message Swiftgram menu gets AI: Summarize and AI: Translate. Lyrics are in the menu of any music file.")))
+    entries.append(.notice(id: id.count, section: .sgTools, text: ghostText("После настройки в меню Pyrogram у сообщения появятся «ИИ: пересказать» и «ИИ: перевести». «Текст песни» есть в меню любого музыкального файла.", "Once set up, the message Pyrogram menu gets AI: Summarize and AI: Translate. Lyrics are in the menu of any music file.")))
 
     entries.append(.header(id: id.count, section: .tabs, text: i18n("Settings.Tabs.Header", lang), badge: nil))
     entries.append(.toggle(id: id.count, section: .tabs, settingName: .hideTabBar, value: SGSimpleSettings.shared.hideTabBar, text: i18n("Settings.Tabs.HideTabBar", lang), enabled: true))
@@ -984,7 +984,7 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
         
         let entries = SGControllerEntries(presentationData: presentationData, callListSettings: callListSettings, experimentalUISettings: experimentalUISettings, appConfiguration: appConfiguration, nameColors: PeerNameColors.with(availableReplyColors: availableReplyColors, availableProfileColors: availableProfileColors), state: state)
         
-        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text("Swiftgram"), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text("Pyrogram"), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
         
         // TODO(swiftgram): focusOnItemTag support
         /* var index = 0

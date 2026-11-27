@@ -617,7 +617,7 @@ private struct SGHiddenChatsView: View {
 
     var body: some View {
         List {
-            Section(footer: Text(sgToolsText(lang, "Скрытые чаты не показываются в списке чатов. Чтобы скрыть чат: долгое нажатие на сообщение в нём → Swiftgram → «Скрыть этот чат». Уведомления из них по-прежнему приходят — отключи их в настройках чата, если нужно. Смахни влево, чтобы вернуть чат в список.", "Hidden chats are not shown in the chat list. To hide a chat: long-press a message in it → Swiftgram → Hide This Chat. Notifications still arrive; mute the chat if needed. Swipe left to return a chat to the list."))) {
+            Section(footer: Text(sgToolsText(lang, "Скрытые чаты не показываются в списке чатов. Чтобы скрыть чат: долгое нажатие на сообщение в нём → Pyrogram → «Скрыть этот чат». Уведомления из них по-прежнему приходят — отключи их в настройках чата, если нужно. Смахни влево, чтобы вернуть чат в список.", "Hidden chats are not shown in the chat list. To hide a chat: long-press a message in it → Pyrogram → Hide This Chat. Notifications still arrive; mute the chat if needed. Swipe left to return a chat to the list."))) {
                 if model.isLoading {
                     ProgressView()
                 } else if model.items.isEmpty {
