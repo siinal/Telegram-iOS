@@ -464,6 +464,12 @@ func synchronizePeerReadState(network: Network, postbox: Postbox, stateManager: 
             return confirmSynchronized(postbox: postbox, peerId: peerId)
             |> ignoreValues
         }
+        // MARK: Swiftgram ghost mode: the local read mark stays ahead of the server's, so validating would answer
+        // .retry forever and keep asking the server. Confirm locally instead.
+        if SGSimpleSettings.shared.ghostBlocksReadMessages && !sgGhostIsReadException(peerId) {
+            return confirmSynchronized(postbox: postbox, peerId: peerId)
+            |> ignoreValues
+        }
         var signal: Signal<Never, PeerReadStateValidationError> = .complete()
         if push {
             signal = signal
