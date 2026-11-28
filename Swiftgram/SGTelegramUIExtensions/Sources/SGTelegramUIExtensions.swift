@@ -45,15 +45,8 @@ func sgHandleInternalUrlRoute(context: AccountContext, parsedUrl: URL, navigatio
         }
         return true
     case "pro", "premium", "buy":
-        if context.sharedContext.immediateSGStatus.status > 1 {
-            navigationController?.pushViewController(context.sharedContext.makeSGProController(context: context))
-        } else if let lastViewController = navigationController?.viewControllers.last as? ViewController {
-            if let payWallController = context.sharedContext.makeSGPayWallController(context: context) {
-                lastViewController.present(payWallController, in: .window(.root), with: ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
-            } else {
-                lastViewController.present(context.sharedContext.makeSGUpdateIOSController(), animated: true)
-            }
-        }
+        // MARK: Pyrogram: Swiftgram Pro is not offered
+        return true
     case "restart":
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         let lang = presentationData.strings.baseLanguageCode

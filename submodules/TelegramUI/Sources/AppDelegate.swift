@@ -1082,6 +1082,9 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
                     icons.append(PresentationAppIcon(name: "SGBeta", imageName: "SGBeta"))
                 }
                 //
+                // MARK: Pyrogram: the alternate icons are Swiftgram-branded (some behind Swiftgram Pro), so the app keeps
+                // its own icon and the picker in Appearance is hidden.
+                icons = []
                 
                 return icons
             } else {

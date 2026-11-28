@@ -271,8 +271,8 @@ private enum DebugLogAction {
         // MARK: Swiftgram
         case .sendOneLog, .sgSendLogs:
             let logCollectionSignal = self == .sgSendLogs ? SGLogger.shared.collectLogs() : Logger.shared.collectLogs()
-            let fileName = self == .sgSendLogs ? "Log-iOS-Swiftgram.txt" : "Log-iOS-Short.txt"
-            let appName = self == .sgSendLogs ? "Swiftgram" : "Telegram"
+            let fileName = self == .sgSendLogs ? "Log-iOS-Pyrogram.txt" : "Log-iOS-Short.txt"
+            let appName = self == .sgSendLogs ? "Pyrogram" : "Telegram"
             //
             let _ = (logCollectionSignal // MARK: Swiftgram
                 |> deliverOnMainQueue).start(next: { logs in
@@ -1068,7 +1068,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
         switch self {
         // MARK: Swiftgram
         case .SGDebug:
-            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: "Swiftgram Debug", label: "", sectionId: self.section, style: .blocks, action: {
+            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: "Pyrogram Debug", label: "", sectionId: self.section, style: .blocks, action: {
                 guard let context = arguments.context else {
                     return
                 }
@@ -2024,7 +2024,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             let bundleId = bundle.bundleIdentifier ?? ""
             let bundleVersion = bundle.infoDictionary?["CFBundleShortVersionString"] ?? ""
             let bundleBuild = bundle.infoDictionary?[kCFBundleVersionKey as String] ?? ""
-            return ItemListTextItem(presentationData: presentationData, text: .plain("Telegram for iOS \(bundleVersion) (\(bundleBuild))\n\(bundleId)".replacingOccurrences(of: "Telegram", with: "Swiftgram")), sectionId: self.section, textAlignment: .center) // MARK: Swiftgram
+            return ItemListTextItem(presentationData: presentationData, text: .plain("Telegram for iOS \(bundleVersion) (\(bundleBuild))\n\(bundleId)".replacingOccurrences(of: "Telegram", with: "Pyrogram")), sectionId: self.section, textAlignment: .center) // MARK: Swiftgram
         case .collectCpuProfile:
             return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: "Collect CPU Profile (10s)", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 let presentationData = arguments.sharedContext.currentPresentationData.with { $0 }

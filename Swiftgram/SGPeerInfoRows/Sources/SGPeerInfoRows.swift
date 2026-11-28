@@ -177,11 +177,9 @@ func sgPeerInfoSettingsItems(context: AccountContext, paymentsEnabled: Bool, pre
     }
 
     var items: [PeerInfoScreenItem] = []
-    if paymentsEnabled || context.sharedContext.immediateSGStatus.status > 1 {
-        items.append(PeerInfoScreenDisclosureItem(id: 0, label: swiftgramProLabel, text: "Swiftgram Pro", icon: PresentationResourcesSettings.swiftgramPro, action: {
-            interaction.openSettings(.swiftgramPro)
-        }))
-    }
+    // MARK: Pyrogram: no Swiftgram Pro entry in Settings
+    let _ = paymentsEnabled
+    let _ = swiftgramProLabel
     items.append(PeerInfoScreenDisclosureItem(id: 1, label: swiftgramLabel, text: "Pyrogram", icon: PresentationResourcesSettings.swiftgram, action: {
         interaction.openSettings(.swiftgram)
     }))
